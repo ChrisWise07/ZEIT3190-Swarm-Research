@@ -1,6 +1,6 @@
 import unittest
 
-from swarm_project_files import tiled_environment_class
+from swarm_project_modules import tiled_environment_class
 
 
 class tiled_environment_tester(unittest.TestCase):
