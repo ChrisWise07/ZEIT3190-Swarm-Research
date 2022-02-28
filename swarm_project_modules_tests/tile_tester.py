@@ -1,5 +1,9 @@
-from pickle import TRUE
+import os
+import sys
 import unittest
+
+ROOT_DIRECTORY = os.path.dirname(os.getcwd())
+sys.path.append(ROOT_DIRECTORY)
 
 from swarm_project_modules import Tile, TileColour, TileType
 
