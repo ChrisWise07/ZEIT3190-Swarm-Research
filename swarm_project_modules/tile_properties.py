@@ -8,9 +8,8 @@ class TileColour(Enum):
 
 
 @unique
-class TileType(Enum):
-    OPEN = 0
+class WallType(Enum):
     LEFT_WALL = 1
     RIGHT_WALL = 2
-    LEFT_CORNER = 3
-    RIGHT_CORNER = 4
+    TOP_WALL = 3
+    BOTTOM_WALL = 4

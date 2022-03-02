@@ -1,11 +1,12 @@
+from typing import List
 from dataclasses import dataclass, field
-from .tile_properties import TileColour, TileType
+from .tile_properties import TileColour, WallType
 
 
 @dataclass(repr=False, eq=False)
 class Tile:
     colour: TileColour
-    tile_type: TileType
+    walls: List[WallType]
     occupied: bool = field(init=False)
 
     def set_occupied(self, occupy_status: bool) -> None:
