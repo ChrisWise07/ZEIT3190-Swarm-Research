@@ -26,22 +26,80 @@ class tiled_environment_tester(unittest.TestCase):
         self.assertEqual(self.tiled_enviro.tile_grid.shape, (10, 5))
 
     def wall_tester(
-        self, walls: List[WallType], coordinates: tuple(int, int), error_message: str
+        self,
+        correct_walls: List[WallType],
+        incorrect_walls: List[WallType],
+        coordinates: Tuple[int, int],
+        error_message: str,
     ):
-        for wall in walls:
+        for wall in correct_walls:
             self.assertIn(
                 wall,
                 self.tiled_enviro.tile_grid[coordinates].walls,
                 error_message,
             )
 
-    def test_tiled_enviro_has_correct_walls_in_correct_places(self):
+        for wall in incorrect_walls:
+            self.assertNotIn(
+                wall,
+                self.tiled_enviro.tile_grid[coordinates].walls,
+                error_message,
+            )
+
+    def test_tiled_enviro_has_correct_corners_in_correct_places(self):
         # top_left_corner
-        self.wall_tester(
-            walls=[WallType.LEFT_WALL, WallType.TOP_WALL],
-            coordinates=(0, 0),
-            error_message="top left corner is not correct",
-        )
+        with self.subTest():
+            self.wall_tester(
+                correct_walls=[WallType.LEFT_WALL, WallType.TOP_WALL],
+                incorrect_walls=[WallType.BOTTOM_WALL, WallType.RIGHT_WALL],
+                coordinates=(0, 0),
+                error_message="top left corner is not correct",
+            )
+
+        # top_right_corner
+        with self.subTest():
+            self.wall_tester(
+                correct_walls=[WallType.RIGHT_WALL, WallType.TOP_WALL],
+                incorrect_walls=[WallType.BOTTOM_WALL, WallType.LEFT_WALL],
+                coordinates=(0, (self.tiled_enviro.width - 1)),
+                error_message="top right corner is not correct",
+            )
+
+        # bottom_left_corner
+        with self.subTest():
+            self.wall_tester(
+                correct_walls=[WallType.LEFT_WALL, WallType.BOTTOM_WALL],
+                incorrect_walls=[WallType.TOP_WALL, WallType.RIGHT_WALL],
+                coordinates=((self.tiled_enviro.height - 1), 0),
+                error_message="bottom left corner is not correct",
+            )
+
+        # bottom_right_corner
+        with self.subTest():
+            self.wall_tester(
+                correct_walls=[WallType.RIGHT_WALL, WallType.BOTTOM_WALL],
+                incorrect_walls=[WallType.TOP_WALL, WallType.LEFT_WALL],
+                coordinates=(
+                    (self.tiled_enviro.height - 1),
+                    (self.tiled_enviro.width - 1),
+                ),
+                error_message="bottom right corner is not correct",
+            )
+
+    def test_tiled_enviro_has_correct_edges_in_correct_places(self):
+        # top_edge
+        for i in range(1, (self.tiled_enviro.width - 1)):
+            with self.subTest():
+                self.wall_tester(
+                    correct_walls=[WallType.TOP_WALL],
+                    incorrect_walls=[
+                        WallType.BOTTOM_WALL,
+                        WallType.RIGHT_WALL,
+                        WallType.LEFT_WALL,
+                    ],
+                    coordinates=(0, i),
+                    error_message="top edge is not correct",
+                )
 
 
 if __name__ == "__main__":
