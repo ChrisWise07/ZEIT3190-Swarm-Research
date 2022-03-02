@@ -14,29 +14,18 @@ class TiledEnvironmentClass:
     ratio_of_white_to_black_tiles: float
     clustered: True
     tile_grid: np.ndarray = field(init=False)
-    tile_corners_to_coordinates_map: Dict[Tuple[int, int], List[WallType]] = field(
-        init=False
-    )
+    tile_walls_to_coordinates_map: Dict[str, List[WallType]] = field(init=False)
 
     def return_tile_with_walls_based_on_coordinates(
         self, coordinates: Tuple[int, int], colour: TileColour
     ) -> Tile:
         return Tile(
             colour=colour,
-            walls=self.tile_corners_to_coordinates_map[str(coordinates)],
+            walls=self.tile_walls_to_coordinates_map.get(str(coordinates)),
         )
-        """
-        if str(coordinates) in self.tile_corners_to_coordinates_map:
-            return Tile(
-                colour=colour,
-                walls=self.tile_corners_to_coordinates_map[str(coordinates)],
-            )
-        else:
-            return Tile(colour=colour, walls=None)
-        """
 
-    def __post_init__(self):
-        self.tile_corners_to_coordinates_map = RegexDict(
+    def return_coordinate_to_walls_dict(self):
+        return RegexDict(
             {
                 # top left corner
                 "(0, 0)": [WallType.LEFT_WALL, WallType.TOP_WALL],
@@ -49,10 +38,21 @@ class TiledEnvironmentClass:
                     WallType.RIGHT_WALL,
                     WallType.BOTTOM_WALL,
                 ],
-                # top edge
-                f"(0, [1-{self.width - 2}])": [WallType.TOP_WALL],
+                # top_edge
+                "(0, .)": [WallType.TOP_WALL],
+                # left_wall
+                "(., 0)": [WallType.LEFT_WALL],
+                # right_wall
+                f"(., {(self.width - 1)})": [WallType.RIGHT_WALL],
+                # bottom_edge
+                f"({(self.height - 1)}, .)": [WallType.BOTTOM_WALL],
+                # all other tiles
+                "(., .)": [],
             }
         )
+
+    def __post_init__(self):
+        self.tile_walls_to_coordinates_map = self.return_coordinate_to_walls_dict()
 
         self.tile_grid = np.empty((self.height, self.width), dtype=object)
 

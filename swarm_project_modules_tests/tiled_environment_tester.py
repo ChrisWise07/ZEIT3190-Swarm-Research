@@ -13,17 +13,17 @@ from swarm_project_modules import TiledEnvironmentClass, WallType
 class tiled_environment_tester(unittest.TestCase):
     def setUp(self) -> None:
         self.tiled_enviro = TiledEnvironmentClass(
-            height=10, width=5, ratio_of_white_to_black_tiles=0.5, clustered=False
+            height=5, width=5, ratio_of_white_to_black_tiles=0.5, clustered=False
         )
 
     def test_tiled_enviro_returns_correct_properties(self):
-        self.assertEqual(self.tiled_enviro.height, 10)
+        self.assertEqual(self.tiled_enviro.height, 5)
         self.assertEqual(self.tiled_enviro.width, 5)
         self.assertEqual(self.tiled_enviro.ratio_of_white_to_black_tiles, 0.5)
         self.assertEqual(self.tiled_enviro.clustered, False)
 
     def test_tiled_enviro_creates_np_array_with_correct_dimensions(self):
-        self.assertEqual(self.tiled_enviro.tile_grid.shape, (10, 5))
+        self.assertEqual(self.tiled_enviro.tile_grid.shape, (5, 5))
 
     def wall_tester(
         self,
@@ -100,6 +100,61 @@ class tiled_environment_tester(unittest.TestCase):
                     coordinates=(0, i),
                     error_message="top edge is not correct",
                 )
+        # left_edge
+        for i in range(1, (self.tiled_enviro.height - 1)):
+            with self.subTest():
+                self.wall_tester(
+                    correct_walls=[WallType.LEFT_WALL],
+                    incorrect_walls=[
+                        WallType.TOP_WALL,
+                        WallType.RIGHT_WALL,
+                        WallType.BOTTOM_WALL,
+                    ],
+                    coordinates=(i, 0),
+                    error_message="left edge is not correct",
+                )
+        # right_edge
+        for i in range(1, (self.tiled_enviro.height - 1)):
+            with self.subTest():
+                self.wall_tester(
+                    correct_walls=[WallType.RIGHT_WALL],
+                    incorrect_walls=[
+                        WallType.TOP_WALL,
+                        WallType.LEFT_WALL,
+                        WallType.BOTTOM_WALL,
+                    ],
+                    coordinates=(i, (self.tiled_enviro.width - 1)),
+                    error_message="right edge is not correct",
+                )
+        # bottom_edge
+        for i in range(1, (self.tiled_enviro.width - 1)):
+            with self.subTest():
+                self.wall_tester(
+                    correct_walls=[WallType.BOTTOM_WALL],
+                    incorrect_walls=[
+                        WallType.TOP_WALL,
+                        WallType.LEFT_WALL,
+                        WallType.RIGHT_WALL,
+                    ],
+                    coordinates=((self.tiled_enviro.height - 1), i),
+                    error_message="bottom edge is not correct",
+                )
+
+    def test_tiled_enviro_has_no_edges_in_correct_places(self):
+        for row in range(1, (self.tiled_enviro.height - 1)):
+            for column in range(1, (self.tiled_enviro.width - 1)):
+                with self.subTest():
+                    self.wall_tester(
+                        correct_walls=[],
+                        incorrect_walls=[
+                            WallType.TOP_WALL,
+                            WallType.LEFT_WALL,
+                            WallType.RIGHT_WALL,
+                            WallType.BOTTOM_WALL,
+                        ],
+                        coordinates=(row, column),
+                        error_message="open tiles are not correct",
+                    )
 
 
 if __name__ == "__main__":
