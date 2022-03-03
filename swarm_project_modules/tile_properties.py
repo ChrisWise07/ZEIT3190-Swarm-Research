@@ -1,14 +1,12 @@
-from enum import Enum, unique
+import fastenum
 
 
-@unique
-class TileColour(Enum):
+class TileColour(fastenum.Enum):
     WHITE = 0
     BLACK = 1
 
 
-@unique
-class WallType(Enum):
+class WallType(fastenum.Enum):
     LEFT_WALL = 1
     RIGHT_WALL = 2
     TOP_WALL = 3
