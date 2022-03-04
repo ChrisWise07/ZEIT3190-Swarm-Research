@@ -1,3 +1,4 @@
+import re
 import numpy as np
 
 from dataclasses import dataclass, field
@@ -15,14 +16,6 @@ class TiledEnvironmentClass:
     clustered: True
     tile_grid: np.ndarray = field(init=False)
     tile_walls_to_coordinates_map: Dict[str, List[WallType]] = field(init=False)
-
-    def return_tile_with_walls_based_on_coordinates(
-        self, coordinates: Tuple[int, int], colour: TileColour
-    ) -> Tile:
-        return Tile(
-            colour=colour,
-            walls=self.tile_walls_to_coordinates_map.get(str(coordinates)),
-        )
 
     def return_coordinate_to_walls_dict(self):
         return RegexDict(
@@ -58,8 +51,8 @@ class TiledEnvironmentClass:
 
         for row in range(self.height):
             for column in range(self.width):
-                self.tile_grid[
-                    row, column
-                ] = self.return_tile_with_walls_based_on_coordinates(
-                    coordinates=(row, column), colour=TileColour.WHITE
-                )
+                self.tile_grid[row, column] = {
+                    "colour": TileColour.WHITE,
+                    "walls": self.tile_walls_to_coordinates_map.get(str((row, column))),
+                    "occupied": False,
+                }
