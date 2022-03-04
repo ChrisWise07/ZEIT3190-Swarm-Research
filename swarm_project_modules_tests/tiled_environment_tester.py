@@ -16,12 +16,6 @@ class tiled_environment_tester(unittest.TestCase):
             height=5, width=5, ratio_of_white_to_black_tiles=0.5, clustered=False
         )
 
-    def test_tiled_enviro_returns_correct_properties(self):
-        self.assertEqual(self.tiled_enviro.height, 5)
-        self.assertEqual(self.tiled_enviro.width, 5)
-        self.assertEqual(self.tiled_enviro.ratio_of_white_to_black_tiles, 0.5)
-        self.assertEqual(self.tiled_enviro.clustered, False)
-
     def test_tiled_enviro_creates_np_array_with_correct_dimensions(self):
         self.assertEqual(self.tiled_enviro.tile_grid.shape, (5, 5))
 
@@ -65,8 +59,8 @@ class tiled_environment_tester(unittest.TestCase):
     def test_tiled_enviro_has_correct_corners_in_correct_places(self):
         # top_left_corner
         self.navigate_tile_grid_and_call_wall_tester_with_coordinate(
-            row_range=(0, 0),
-            column_range=(0, 0),
+            row_range=(0, 1),
+            column_range=(0, 1),
             wall_test_config={
                 "correct_walls": [WallType.LEFT_WALL, WallType.TOP_WALL],
                 "incorrect_walls": [WallType.BOTTOM_WALL, WallType.RIGHT_WALL],
@@ -76,7 +70,7 @@ class tiled_environment_tester(unittest.TestCase):
 
         # top_right_corner
         self.navigate_tile_grid_and_call_wall_tester_with_coordinate(
-            row_range=(0, 0),
+            row_range=(0, 1),
             column_range=((self.tiled_enviro.width - 1), (self.tiled_enviro.width)),
             wall_test_config={
                 "correct_walls": [WallType.RIGHT_WALL, WallType.TOP_WALL],
@@ -88,7 +82,7 @@ class tiled_environment_tester(unittest.TestCase):
         # bottom_left_corner
         self.navigate_tile_grid_and_call_wall_tester_with_coordinate(
             row_range=((self.tiled_enviro.height - 1), (self.tiled_enviro.height)),
-            column_range=(0, 0),
+            column_range=(0, 1),
             wall_test_config={
                 "correct_walls": [WallType.LEFT_WALL, WallType.BOTTOM_WALL],
                 "incorrect_walls": [WallType.TOP_WALL, WallType.RIGHT_WALL],
@@ -111,7 +105,7 @@ class tiled_environment_tester(unittest.TestCase):
         # top_edge
         self.navigate_tile_grid_and_call_wall_tester_with_coordinate(
             row_range=(0, 1),
-            column_range=(1, (self.tiled_enviro.width) + 2),
+            column_range=(1, (self.tiled_enviro.width - 1)),
             wall_test_config={
                 "correct_walls": [WallType.TOP_WALL],
                 "incorrect_walls": [
@@ -126,7 +120,7 @@ class tiled_environment_tester(unittest.TestCase):
         # left_edge
         self.navigate_tile_grid_and_call_wall_tester_with_coordinate(
             row_range=(1, (self.tiled_enviro.height - 1)),
-            column_range=(0, 0),
+            column_range=(0, 1),
             wall_test_config={
                 "correct_walls": [WallType.LEFT_WALL],
                 "incorrect_walls": [
@@ -137,32 +131,36 @@ class tiled_environment_tester(unittest.TestCase):
                 "error_message": "left edge is not correct",
             },
         )
+
         # right_edge
-        for i in range(1, (self.tiled_enviro.height - 1)):
-            with self.subTest():
-                self.wall_tester(
-                    correct_walls=[WallType.RIGHT_WALL],
-                    incorrect_walls=[
-                        WallType.TOP_WALL,
-                        WallType.LEFT_WALL,
-                        WallType.BOTTOM_WALL,
-                    ],
-                    coordinates=(i, (self.tiled_enviro.width - 1)),
-                    error_message="right edge is not correct",
-                )
+        self.navigate_tile_grid_and_call_wall_tester_with_coordinate(
+            row_range=(1, (self.tiled_enviro.height - 1)),
+            column_range=((self.tiled_enviro.width - 1), (self.tiled_enviro.width)),
+            wall_test_config={
+                "correct_walls": [WallType.RIGHT_WALL],
+                "incorrect_walls": [
+                    WallType.TOP_WALL,
+                    WallType.LEFT_WALL,
+                    WallType.BOTTOM_WALL,
+                ],
+                "error_message": "right edge is not correct",
+            },
+        )
+
         # bottom_edge
-        for i in range(1, (self.tiled_enviro.width - 1)):
-            with self.subTest():
-                self.wall_tester(
-                    correct_walls=[WallType.BOTTOM_WALL],
-                    incorrect_walls=[
-                        WallType.TOP_WALL,
-                        WallType.LEFT_WALL,
-                        WallType.RIGHT_WALL,
-                    ],
-                    coordinates=((self.tiled_enviro.height - 1), i),
-                    error_message="bottom edge is not correct",
-                )
+        self.navigate_tile_grid_and_call_wall_tester_with_coordinate(
+            row_range=((self.tiled_enviro.height - 1), (self.tiled_enviro.height)),
+            column_range=(1, (self.tiled_enviro.width - 1)),
+            wall_test_config={
+                "correct_walls": [WallType.BOTTOM_WALL],
+                "incorrect_walls": [
+                    WallType.TOP_WALL,
+                    WallType.LEFT_WALL,
+                    WallType.RIGHT_WALL,
+                ],
+                "error_message": "bottom edge is not correct",
+            },
+        )
 
     def test_tiled_enviro_has_no_edges_in_correct_places(self):
         self.navigate_tile_grid_and_call_wall_tester_with_coordinate(
