@@ -1,4 +1,3 @@
-import re
 import numpy as np
 
 from dataclasses import dataclass, field
@@ -15,7 +14,6 @@ class TiledEnvironmentClass:
     ratio_of_white_to_black_tiles: float
     clustered: True
     tile_grid: np.ndarray = field(init=False)
-    tile_walls_to_coordinates_map: Dict[str, List[WallType]] = field(init=False)
 
     def return_coordinate_to_walls_dict(self):
         return RegexDict(
@@ -45,14 +43,23 @@ class TiledEnvironmentClass:
         )
 
     def __post_init__(self):
-        self.tile_walls_to_coordinates_map = self.return_coordinate_to_walls_dict()
+        tile_walls_to_coordinates_map = self.return_coordinate_to_walls_dict()
+        random_numbers_between_0_1 = np.random.rand(self.height, self.width)
 
         self.tile_grid = np.empty((self.height, self.width), dtype=object)
 
         for row in range(self.height):
             for column in range(self.width):
+                if (
+                    random_numbers_between_0_1[(row, column)]
+                    < self.ratio_of_white_to_black_tiles
+                ):
+                    colour = TileColour.WHITE
+                else:
+                    colour = TileColour.BLACK
+
                 self.tile_grid[row, column] = {
-                    "colour": TileColour.WHITE,
-                    "walls": self.tile_walls_to_coordinates_map.get(str((row, column))),
+                    "colour": colour,
+                    "walls": tile_walls_to_coordinates_map.get(str((row, column))),
                     "occupied": False,
                 }
