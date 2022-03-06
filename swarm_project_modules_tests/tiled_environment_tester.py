@@ -211,6 +211,70 @@ class tiled_environment_tester(unittest.TestCase):
             places=1,
         )
 
+    def clustered_initial_observations_tester(
+        self,
+        tiled_environment: TiledEnvironment,
+        initial_tile_colour: TileColour,
+        non_initial_tile_colour: TileColour,
+        initial_tiles_row_limit: int,
+        initial_tiles_column_limit: int,
+    ):
+        # full with initial
+        navigate_tile_grid_and_call_function_over_range(
+            row_range=(0, (tiled_environment.height)),
+            column_range=(0, initial_tiles_column_limit),
+            func_config={
+                "colour": initial_tile_colour,
+                "error_message": (
+                    f"clustered initial observations helpful {initial_tile_colour} tiles not correct"
+                ),
+                "tile_grid": tiled_environment.tile_grid,
+            },
+            func=self.colour_tester,
+        )
+
+        # partial with inital
+        navigate_tile_grid_and_call_function_over_range(
+            row_range=(0, initial_tiles_row_limit),
+            column_range=(initial_tiles_column_limit, initial_tiles_column_limit + 1),
+            func_config={
+                "colour": initial_tile_colour,
+                "error_message": (
+                    f"clustered initial observations helpful {initial_tile_colour} tiles not correct"
+                ),
+                "tile_grid": tiled_environment.tile_grid,
+            },
+            func=self.colour_tester,
+        )
+
+        # full with non-initial
+        navigate_tile_grid_and_call_function_over_range(
+            row_range=(0, (tiled_environment.height)),
+            column_range=(initial_tiles_column_limit + 1, tiled_environment.width),
+            func_config={
+                "colour": non_initial_tile_colour,
+                "error_message": (
+                    f"clustered initial observations helpful {non_initial_tile_colour} tiles not correct"
+                ),
+                "tile_grid": tiled_environment.tile_grid,
+            },
+            func=self.colour_tester,
+        )
+
+        # partial with non-inital
+        navigate_tile_grid_and_call_function_over_range(
+            row_range=(initial_tiles_row_limit, (tiled_environment.height)),
+            column_range=(initial_tiles_column_limit, initial_tiles_column_limit + 1),
+            func_config={
+                "colour": non_initial_tile_colour,
+                "error_message": (
+                    f"clustered initial observations helpful {non_initial_tile_colour} tiles not correct"
+                ),
+                "tile_grid": tiled_environment.tile_grid,
+            },
+            func=self.colour_tester,
+        )
+
     def test_clustered_initial_observations_helpful_has_white_tiles_first(self):
         new_tiled_environment = TiledEnvironment(
             height=5,
@@ -220,16 +284,29 @@ class tiled_environment_tester(unittest.TestCase):
             initial_observations_helpful=True,
         )
 
-        # initial_white_tiles
-        navigate_tile_grid_and_call_function_over_range(
-            row_range=(0, (self.tiled_enviro.height - 1)),
-            column_range=(0, 2),
-            func_config={
-                "colour": TileColour.WHITE,
-                "error_message": "clustered initial observations helpful white tiles not correct",
-                "tile_grid": new_tiled_environment.tile_grid,
-            },
-            func=self.colour_tester,
+        self.clustered_initial_observations_tester(
+            tiled_environment=new_tiled_environment,
+            initial_tile_colour=TileColour.WHITE,
+            non_initial_tile_colour=TileColour.BLACK,
+            initial_tiles_row_limit=2,
+            initial_tiles_column_limit=2,
+        )
+
+    def test_clustered_initial_observations_not_helpful_has_black_tiles_first(self):
+        new_tiled_environment = TiledEnvironment(
+            height=5,
+            width=5,
+            ratio_of_white_to_black_tiles=0.5,
+            clustered=True,
+            initial_observations_helpful=False,
+        )
+
+        self.clustered_initial_observations_tester(
+            tiled_environment=new_tiled_environment,
+            initial_tile_colour=TileColour.BLACK,
+            non_initial_tile_colour=TileColour.WHITE,
+            initial_tiles_row_limit=2,
+            initial_tiles_column_limit=2,
         )
 
 
