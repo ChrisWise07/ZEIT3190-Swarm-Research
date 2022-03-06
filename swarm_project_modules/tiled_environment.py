@@ -8,11 +8,12 @@ from .regex_dictionary import RegexDict
 
 
 @dataclass(repr=False, eq=False)
-class TiledEnvironmentClass:
+class TiledEnvironment:
     height: int
     width: int
     ratio_of_white_to_black_tiles: float
-    clustered: True
+    clustered: bool = False
+    initial_observations_helpful: bool = True
     tile_grid: np.ndarray = field(init=False)
 
     def return_coordinate_to_walls_dict(self):
@@ -42,12 +43,10 @@ class TiledEnvironmentClass:
             }
         )
 
-    def __post_init__(self):
-        tile_walls_to_coordinates_map = self.return_coordinate_to_walls_dict()
+    def non_clustered_tile_grid(
+        self, tile_walls_to_coordinates_map: Dict[str, List[WallType]]
+    ):
         random_numbers_between_0_1 = np.random.rand(self.height, self.width)
-
-        self.tile_grid = np.empty((self.height, self.width), dtype=object)
-
         for row in range(self.height):
             for column in range(self.width):
                 if (
@@ -63,3 +62,21 @@ class TiledEnvironmentClass:
                     "walls": tile_walls_to_coordinates_map.get(str((row, column))),
                     "occupied": False,
                 }
+
+    def clustered_environment(
+        self, tile_walls_to_coordinates_map: Dict[str, List[WallType]]
+    ):
+        if self.initial_observations_helpful:
+            pass
+
+    def __post_init__(self):
+        tile_walls_to_coordinates_map = self.return_coordinate_to_walls_dict()
+
+        self.tile_grid = np.empty((self.height, self.width), dtype=object)
+
+        if self.clustered:
+            pass
+        else:
+            self.non_clustered_tile_grid(
+                tile_walls_to_coordinates_map=tile_walls_to_coordinates_map
+            )
