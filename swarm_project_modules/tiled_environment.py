@@ -48,7 +48,6 @@ class TiledEnvironment:
         colour: TileColour, 
         walls: List[WallType], 
         coordinate: Tuple[int, int], 
-        id: int
     ):
         self.tile_grid[coordinate] = {
             "colour": colour,
