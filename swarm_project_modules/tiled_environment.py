@@ -44,7 +44,11 @@ class TiledEnvironment:
         )
 
     def tile_creator(
-        self, colour: TileColour, walls: List[WallType], coordinate: Tuple[int, int]
+        self, 
+        colour: TileColour, 
+        walls: List[WallType], 
+        coordinate: Tuple[int, int], 
+        id: int
     ):
         self.tile_grid[coordinate] = {
             "colour": colour,
