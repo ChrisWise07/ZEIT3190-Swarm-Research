@@ -53,6 +53,7 @@ class TiledEnvironment:
             "colour": colour,
             "walls": walls,
             "occupied": False,
+            "id": (coordinate)
         }
 
     def non_clustered_environment(
