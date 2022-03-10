@@ -1,7 +1,7 @@
 import os
 import sys
 import unittest
-import numpy as np
+from numpy import ndarray
 from typing import Dict, List, Tuple
 
 ROOT_DIRECTORY = os.path.dirname(os.getcwd())
@@ -26,11 +26,11 @@ class tiled_environment_tester(unittest.TestCase):
         self.assertEqual(self.tiled_enviro.tile_grid.shape, (10, 10))
 
     def wall_tester(
-        self,
-        correct_walls: List[WallType],
-        incorrect_walls: List[WallType],
+        self, 
+        correct_walls: List[WallType], 
+        incorrect_walls: List[WallType], 
         error_message: str,
-        tile_grid: np.ndarray,
+        tile_grid: ndarray,
         coordinate: Tuple[int, int],
     ):
         with self.subTest():
@@ -52,7 +52,7 @@ class tiled_environment_tester(unittest.TestCase):
         self,
         colour: TileColour,
         error_message: str,
-        tile_grid: np.ndarray,
+        tile_grid:  ndarray,
         coordinate: Tuple[int, int],
     ):
         with self.subTest():
