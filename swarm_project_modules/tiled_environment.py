@@ -44,16 +44,16 @@ class TiledEnvironment:
         )
 
     def tile_creator(
-        self, 
-        colour: TileColour, 
-        walls: List[WallType], 
-        coordinate: Tuple[int, int], 
+        self,
+        colour: TileColour,
+        walls: List[WallType],
+        coordinate: Tuple[int, int],
     ):
         self.tile_grid[coordinate] = {
             "colour": colour,
             "walls": walls,
             "occupied": False,
-            "id": (coordinate)
+            "id": (coordinate),
         }
 
     def non_clustered_environment(

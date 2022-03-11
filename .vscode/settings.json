@@ -1,9 +1,10 @@
 {
-    "editor.bracketPairColorization.enabled": true,
-    "python.formatting.provider": "black",
+    "editor.defaultFormatter": null,
+    "editor.insertSpaces": true,
+    "editor.tabSize": 4,
     "editor.formatOnSave": true,
-    "python.analysis.extraPaths": [
-        "./swarm_project_modules"
+    "editor.rulers": [
+        88
     ],
-    "editor.rulers": [88]
+    "editor.bracketPairColorization.enabled": true
 }
