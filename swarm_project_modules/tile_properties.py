@@ -7,7 +7,7 @@ class TileColour(fastenum.Enum):
 
 
 class WallType(fastenum.Enum):
-    LEFT_WALL = 1
-    RIGHT_WALL = 2
-    TOP_WALL = 3
-    BOTTOM_WALL = 4
+    LEFT_WALL = 0
+    RIGHT_WALL = 1
+    TOP_WALL = 2
+    BOTTOM_WALL = 3
