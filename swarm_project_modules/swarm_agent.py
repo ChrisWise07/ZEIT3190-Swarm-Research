@@ -16,7 +16,7 @@ class SwarmAgent:
     calculated_collective_opinion: float = field(init=False)
     cells_visited: Set[Tuple[int, int]] = field(init=False)
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         self.cells_visited = set()
 
     def occupy_cell(self, tile: Dict) -> bool:
@@ -27,11 +27,11 @@ class SwarmAgent:
         else:
             return False
 
-    def leave_cell(self, tile: Dict):
+    def leave_cell(self, tile: Dict) -> None:
         tile["occupied"] = False
         self.cells_visited.add(tile["id"])
 
-    def return_reward(self):
+    def return_reward(self) -> int:
         return int(not (self.current_cell in self.cells_visited))
 
     def __return_new_cell_coordinate(self) -> Tuple[int, int]:
@@ -42,7 +42,7 @@ class SwarmAgent:
             Direction.UP: (self.current_cell[0] - 1, self.current_cell[1]),
         }[self.current_direction_facing]
 
-    def forward_step(self, tile_grid: np.ndarray):
+    def forward_step(self, tile_grid: np.ndarray) -> None:
 
         new_cell = self.__return_new_cell_coordinate()
         old_cell = self.current_cell
