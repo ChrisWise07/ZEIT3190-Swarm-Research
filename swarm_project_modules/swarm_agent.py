@@ -101,4 +101,4 @@ class SwarmAgent:
                 )
 
     def get_relative_position_of_object(self) -> Position:
-        return Position.LEFT
+        pass
