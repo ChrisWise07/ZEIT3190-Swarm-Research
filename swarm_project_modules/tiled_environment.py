@@ -20,15 +20,15 @@ class TiledEnvironment:
         return RegexDict(
             {
                 # top left corner
-                "(0, 0)": [WallType.LEFT_WALL, WallType.TOP_WALL],
+                "(0, 0)": [WallType.TOP_WALL, WallType.LEFT_WALL],
                 # top right corner
-                f"(0, {(self.width - 1)})": [WallType.RIGHT_WALL, WallType.TOP_WALL],
+                f"(0, {(self.width - 1)})": [WallType.TOP_WALL, WallType.RIGHT_WALL],
                 # bottom left corner
-                f"({(self.height - 1)}, 0)": [WallType.LEFT_WALL, WallType.BOTTOM_WALL],
+                f"({(self.height - 1)}, 0)": [WallType.BOTTOM_WALL, WallType.LEFT_WALL],
                 # bottom right corner
                 f"({(self.height - 1)}, {(self.width - 1)})": [
-                    WallType.RIGHT_WALL,
                     WallType.BOTTOM_WALL,
+                    WallType.RIGHT_WALL,
                 ],
                 # top_edge
                 "(0, .)": [WallType.TOP_WALL],

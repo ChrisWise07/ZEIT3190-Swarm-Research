@@ -1,7 +1,9 @@
 import os
 import sys
 import unittest
-from typing import Dict, List, Tuple
+from typing import Dict, List, Tuple, Union
+
+from black import diff
 
 
 ROOT_DIRECTORY = os.path.dirname(os.getcwd())
@@ -13,7 +15,8 @@ from swarm_project_modules import (
     Direction,
     Turn,
     ObjectType,
-    Position,
+    RelativePosition,
+    RelativeMotion,
 )
 
 
@@ -407,32 +410,135 @@ class swarm_agent_tester(unittest.TestCase):
             ),
         )
 
-    def position_tester(
+    def relative_postion_motion_tester(
         self,
-        correct_relative_position: Position,
+        func,
+        correct_relative_position_or_motion: Union[RelativePosition, RelativeMotion],
         obj_description: str,
+        different_starting_cell: Tuple[int, int] = None,
         agent_direction: Direction = Direction.RIGHT,
     ) -> None:
+        if different_starting_cell:
+            self.swarm_agent.leave_cell(
+                self.tiled_enviro.tile_grid[self.swarm_agent.current_cell]
+            )
+            self.swarm_agent.occupy_cell(
+                self.tiled_enviro.tile_grid[different_starting_cell]
+            )
+
         self.swarm_agent.current_direction_facing = agent_direction
-        current_relative_position = self.swarm_agent.get_relative_position_of_object()
+
+        current_relative_position_or_motion = func(
+            tile=self.tiled_enviro.tile_grid[self.swarm_agent.current_cell]
+        )
+
         self.assertEqual(
-            current_relative_position,
-            correct_relative_position,
+            current_relative_position_or_motion,
+            correct_relative_position_or_motion,
             (
-                f"Didn't return {obj_description} is {correct_relative_position} when facing {agent_direction}"
+                f"Didn't return {obj_description} is {correct_relative_position_or_motion} when facing {agent_direction}"
             ),
         )
 
     def test_agent_returns_left_of_top_left_corner_when_facing_right(self):
-        self.position_tester(
-            correct_relative_position=Position.LEFT, obj_description="top left corner"
+        self.relative_postion_motion_tester(
+            correct_relative_position_or_motion=RelativePosition.LEFT,
+            func=self.swarm_agent.get_relative_position_of_object,
+            obj_description="top left corner",
         )
 
     def test_agent_returns_right_of_top_left_corner_when_facing_left(self):
-        self.position_tester(
-            correct_relative_position=Position.RIGHT,
+        self.relative_postion_motion_tester(
+            correct_relative_position_or_motion=RelativePosition.RIGHT,
+            func=self.swarm_agent.get_relative_position_of_object,
             obj_description="top left corner",
             agent_direction=Direction.LEFT,
+        )
+
+    def test_agent_returns_left_of_top_left_corner_when_facing_up(self):
+        self.relative_postion_motion_tester(
+            correct_relative_position_or_motion=RelativePosition.LEFT,
+            func=self.swarm_agent.get_relative_position_of_object,
+            obj_description="top left corner",
+            agent_direction=Direction.UP,
+        )
+
+    def test_agent_returns_right_of_top_left_corner_when_facing_down(self):
+        self.relative_postion_motion_tester(
+            correct_relative_position_or_motion=RelativePosition.RIGHT,
+            func=self.swarm_agent.get_relative_position_of_object,
+            obj_description="top left corner",
+            agent_direction=Direction.DOWN,
+        )
+
+    def test_agent_returns_top_wall_is_behind_when_facing_down(self):
+        self.relative_postion_motion_tester(
+            correct_relative_position_or_motion=RelativePosition.BEHIND,
+            func=self.swarm_agent.get_relative_position_of_object,
+            obj_description="top wall",
+            different_starting_cell=(0, 1),
+            agent_direction=Direction.DOWN,
+        )
+
+    def test_agent_returns_bottom_left_corner_is_right_when_facing_up(self):
+        self.relative_postion_motion_tester(
+            correct_relative_position_or_motion=RelativePosition.RIGHT,
+            func=self.swarm_agent.get_relative_position_of_object,
+            obj_description="bottom left corner",
+            different_starting_cell=(4, 4),
+            agent_direction=Direction.UP,
+        )
+
+    def test_agent_returns_bottom_wall_is_front_when_facing_down(self):
+        self.relative_postion_motion_tester(
+            correct_relative_position_or_motion=RelativePosition.FRONT,
+            func=self.swarm_agent.get_relative_position_of_object,
+            obj_description="bottom wall",
+            different_starting_cell=(4, 1),
+            agent_direction=Direction.DOWN,
+        )
+
+    def test_agent_is_approaching_corner_when_facing_in_to_it(self):
+        self.relative_postion_motion_tester(
+            correct_relative_position_or_motion=RelativeMotion.APPROACHING,
+            func=self.swarm_agent.get_relative_motion_of_object,
+            obj_description="top left corner",
+            agent_direction=Direction.UP,
+        )
+
+    def test_agent_is_escaping_corner_when_facing_away_from_it(self):
+        self.relative_postion_motion_tester(
+            correct_relative_position_or_motion=RelativeMotion.ESCAPING,
+            func=self.swarm_agent.get_relative_motion_of_object,
+            obj_description="top left corner",
+            agent_direction=Direction.DOWN,
+        )
+
+    def test_agent_is_escaping_from_top_wall_when_right_to_wall(self):
+        self.relative_postion_motion_tester(
+            correct_relative_position_or_motion=RelativeMotion.ESCAPING,
+            func=self.swarm_agent.get_relative_motion_of_object,
+            obj_description="top wall",
+            different_starting_cell=(0, 1),
+            agent_direction=Direction.RIGHT,
+        )
+
+    def test_agent_is_escaping_from_top_wall_when_left_to_wall(self):
+        self.relative_postion_motion_tester(
+            correct_relative_position_or_motion=RelativeMotion.ESCAPING,
+            func=self.swarm_agent.get_relative_motion_of_object,
+            obj_description="top wall",
+            different_starting_cell=(0, 1),
+            agent_direction=Direction.LEFT,
+        )
+
+    def test_agent_is_escaping_from_bottom_wall_when_infront_of_wall(self):
+        self.relative_postion_motion_tester(
+            correct_relative_position_or_motion=RelativeMotion.ESCAPING,
+            func=self.swarm_agent.get_relative_motion_of_object,
+            obj_description="bottom wall",
+            different_starting_cell=(4, 1),
+            agent_direction=Direction.UP,
         )
 
 

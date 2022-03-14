@@ -13,9 +13,11 @@ class Turn(fastenum.Enum):
     LEFT = -1
 
 
-class Position(fastenum.Enum):
-    LEFT = 0
-    RIGHT = 1
+class RelativePosition(fastenum.Enum):
+    FRONT = 0
+    LEFT = 1
+    BEHIND = 2
+    RIGHT = 3
 
 
 class ObjectType(fastenum.Enum):
@@ -23,3 +25,8 @@ class ObjectType(fastenum.Enum):
     WALL = 1
     CORNER = 2
     AGENT = 3
+
+
+class RelativeMotion(fastenum.Enum):
+    ESCAPING = 0
+    APPROACHING = 1

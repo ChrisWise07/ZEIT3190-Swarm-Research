@@ -2,8 +2,13 @@ from numpy import ndarray
 
 from dataclasses import dataclass, field, InitVar
 from typing import Any, Dict, List, Tuple, Set
-from .tile_properties import TileColour, WallType
-from .swarm_agent_enums import Direction, Turn, ObjectType, Position
+from .swarm_agent_enums import (
+    Direction,
+    RelativeMotion,
+    Turn,
+    ObjectType,
+    RelativePosition,
+)
 
 
 @dataclass(repr=False, eq=False)
@@ -100,5 +105,41 @@ class SwarmAgent:
                     num_of_walls=len(next_tile_along_walls)
                 )
 
-    def get_relative_position_of_object(self) -> Position:
-        pass
+    def __return_relative_postion_given_a_wall(
+        self, wall_number: int
+    ) -> RelativePosition:
+        return {
+            0: RelativePosition.FRONT,
+            1: RelativePosition.LEFT,
+            2: RelativePosition.BEHIND,
+            3: RelativePosition.RIGHT,
+        }[(self.current_direction_facing.value - wall_number) % 4]
+
+    def wall_is_on_left_or_right(self, wall_value: int):
+        if wall_value != self.current_direction_facing.value:
+            return (self.current_direction_facing.value - wall_value) % 4 != 2
+        else:
+            return False
+
+    def get_relative_position_of_object(self, tile: Dict) -> RelativePosition:
+        tile_walls = tile["walls"]
+
+        if len(tile_walls) > 1:
+            tile_walls = [
+                wall
+                for wall in tile["walls"]
+                if self.wall_is_on_left_or_right(wall.value)
+            ]
+
+        return self.__return_relative_postion_given_a_wall(
+            wall_number=tile_walls.pop(0).value
+        )
+
+    def get_relative_motion_of_object(self, tile: Dict) -> RelativeMotion:
+        tile_walls = tile["walls"]
+
+        for wall in tile_walls:
+            if wall.value == self.current_direction_facing.value:
+                return RelativeMotion.APPROACHING
+
+        return RelativeMotion.ESCAPING
