@@ -1,33 +1,28 @@
 import os
 import sys
 import unittest
-from typing import Dict, List, Tuple, Union
-
-from black import diff
-
+from typing import List, Tuple, Union
 
 ROOT_DIRECTORY = os.path.dirname(os.getcwd())
 sys.path.append(ROOT_DIRECTORY)
 
 from swarm_project_modules import (
-    TiledEnvironment,
     SwarmAgent,
     Direction,
     Turn,
     ObjectType,
     RelativePosition,
     RelativeMotion,
+    create_tile_grid,
 )
 
 
 class swarm_agent_tester(unittest.TestCase):
     def setUp(self) -> None:
-        self.tiled_enviro = TiledEnvironment(
+        self.tiled_enviro = create_tile_grid(
             height=5, width=5, ratio_of_white_to_black_tiles=0.5, clustered=False
         )
-        self.swarm_agent = SwarmAgent(
-            id=1, starting_cell=self.tiled_enviro.tile_grid[(0, 0)]
-        )
+        self.swarm_agent = SwarmAgent(id=1, starting_cell=self.tiled_enviro[(0, 0)])
 
     def test_visited_cell_is_visited(self):
         self.assertEqual(
@@ -36,19 +31,17 @@ class swarm_agent_tester(unittest.TestCase):
 
     def test_visit_cell_again_cause_no_error(self):
         with self.subTest():
-            self.swarm_agent.occupy_cell(self.tiled_enviro.tile_grid[(0, 0)])
+            self.swarm_agent.occupy_cell(self.tiled_enviro[(0, 0)])
 
     def test_occupied_cell_returns_is_occupied(self):
         self.assertEqual(
-            self.tiled_enviro.tile_grid[(0, 0)]["occupied"],
+            self.tiled_enviro[(0, 0)]["occupied"],
             True,
             "occupation status not correct",
         )
 
     def test_another_member_visting_cell_cannot_enter_it(self):
-        second_swarm_agent = SwarmAgent(
-            id=2, starting_cell=self.tiled_enviro.tile_grid[(0, 0)]
-        )
+        second_swarm_agent = SwarmAgent(id=2, starting_cell=self.tiled_enviro[(0, 0)])
         self.assertNotEqual(
             second_swarm_agent.current_cell,
             (0, 0),
@@ -56,21 +49,19 @@ class swarm_agent_tester(unittest.TestCase):
         )
 
     def test_leaving_cell_makes_it_no_longer_occupied(self):
-        self.swarm_agent.leave_cell(self.tiled_enviro.tile_grid[(0, 0)])
+        self.swarm_agent.leave_cell(self.tiled_enviro[(0, 0)])
         self.assertEqual(
-            self.tiled_enviro.tile_grid[(0, 0)]["occupied"],
+            self.tiled_enviro[(0, 0)]["occupied"],
             False,
             "occupation status not correct on leaving",
         )
 
     def test_occupy_leave_cell_allows_other_agent_to_occupy(self):
-        self.swarm_agent.leave_cell(self.tiled_enviro.tile_grid[(0, 0)])
-        second_swarm_agent = SwarmAgent(
-            id=2, starting_cell=self.tiled_enviro.tile_grid[(0, 0)]
-        )
+        self.swarm_agent.leave_cell(self.tiled_enviro[(0, 0)])
+        second_swarm_agent = SwarmAgent(id=2, starting_cell=self.tiled_enviro[(0, 0)])
         with self.subTest():
             self.assertEqual(
-                self.tiled_enviro.tile_grid[(0, 0)]["occupied"],
+                self.tiled_enviro[(0, 0)]["occupied"],
                 True,
                 "occupation status not correct on re-entry",
             )
@@ -81,7 +72,7 @@ class swarm_agent_tester(unittest.TestCase):
             )
 
     def test_when_leaving_cell_it_is_added_to_visited_list(self):
-        self.swarm_agent.leave_cell(self.tiled_enviro.tile_grid[(0, 0)])
+        self.swarm_agent.leave_cell(self.tiled_enviro[(0, 0)])
         self.assertIn(
             (0, 0),
             self.swarm_agent.cells_visited,
@@ -89,19 +80,19 @@ class swarm_agent_tester(unittest.TestCase):
         )
 
     def test_current_cell_not_in_visited_cell_return_reward_of_1(self):
-        self.swarm_agent.leave_cell(self.tiled_enviro.tile_grid[(0, 0)])
-        self.swarm_agent.occupy_cell(self.tiled_enviro.tile_grid[(1, 0)])
+        self.swarm_agent.leave_cell(self.tiled_enviro[(0, 0)])
+        self.swarm_agent.occupy_cell(self.tiled_enviro[(1, 0)])
         self.assertEqual(
-            self.swarm_agent.return_reward(),
+            self.swarm_agent.return_navigation_reward(),
             1,
             "postive reward not returning correctly",
         )
 
     def test_current_cell_in_visited_cell_return_reward_of_0(self):
-        self.swarm_agent.leave_cell(self.tiled_enviro.tile_grid[(0, 0)])
-        self.swarm_agent.occupy_cell(self.tiled_enviro.tile_grid[(0, 0)])
+        self.swarm_agent.leave_cell(self.tiled_enviro[(0, 0)])
+        self.swarm_agent.occupy_cell(self.tiled_enviro[(0, 0)])
         self.assertEqual(
-            self.swarm_agent.return_reward(),
+            self.swarm_agent.return_navigation_reward(),
             0,
             "zero reward not returning correctly",
         )
@@ -109,11 +100,9 @@ class swarm_agent_tester(unittest.TestCase):
     def start_on_different_cell(
         self, different_starting_cell: Tuple[int, int]
     ) -> SwarmAgent:
-        self.swarm_agent.leave_cell(
-            self.tiled_enviro.tile_grid[self.swarm_agent.current_cell]
-        )
+        self.swarm_agent.leave_cell(self.tiled_enviro[self.swarm_agent.current_cell])
         return SwarmAgent(
-            id=1, starting_cell=self.tiled_enviro.tile_grid[different_starting_cell]
+            id=1, starting_cell=self.tiled_enviro[different_starting_cell]
         )
 
     def succesful_forward_step_tester(
@@ -131,7 +120,7 @@ class swarm_agent_tester(unittest.TestCase):
 
         self.swarm_agent.current_direction_facing = agent_direction
 
-        self.swarm_agent.forward_step(self.tiled_enviro.tile_grid)
+        self.swarm_agent.forward_step(self.tiled_enviro)
 
         with self.subTest():
             self.assertEqual(
@@ -145,17 +134,17 @@ class swarm_agent_tester(unittest.TestCase):
                 f"cells visited for {agent_direction} facing forward step not working",
             )
             self.assertEqual(
-                self.tiled_enviro.tile_grid[starting_cell]["occupied"],
+                self.tiled_enviro[starting_cell]["occupied"],
                 False,
                 f"occupation for cell left for {agent_direction} facing forward step not working",
             )
             self.assertEqual(
-                self.tiled_enviro.tile_grid[new_cell]["occupied"],
+                self.tiled_enviro[new_cell]["occupied"],
                 True,
                 f"occupation for current cell for {agent_direction} facing forward step not working",
             )
             self.assertEqual(
-                self.swarm_agent.return_reward(),
+                self.swarm_agent.return_navigation_reward(),
                 1,
                 "correct reward not returning after succesful step forward",
             )
@@ -197,7 +186,7 @@ class swarm_agent_tester(unittest.TestCase):
 
         self.swarm_agent.current_direction_facing = agent_direction
 
-        self.swarm_agent.forward_step(self.tiled_enviro.tile_grid)
+        self.swarm_agent.forward_step(self.tiled_enviro)
 
         with self.subTest():
             self.assertEqual(
@@ -211,12 +200,12 @@ class swarm_agent_tester(unittest.TestCase):
                 f"cells visited for {agent_direction} facing forward step not working",
             )
             self.assertEqual(
-                self.tiled_enviro.tile_grid[starting_cell]["occupied"],
+                self.tiled_enviro[starting_cell]["occupied"],
                 True,
                 f"occupation for current cell for {agent_direction} facing forward step not working",
             )
             self.assertEqual(
-                self.swarm_agent.return_reward(),
+                self.swarm_agent.return_navigation_reward(),
                 0,
                 "correct reward not returning after unsuccesful step forward",
             )
@@ -228,7 +217,7 @@ class swarm_agent_tester(unittest.TestCase):
                 )
 
     def test_step_forward_on_to_occupied_tile(self):
-        SwarmAgent(id=2, starting_cell=self.tiled_enviro.tile_grid[(0, 1)])
+        SwarmAgent(id=2, starting_cell=self.tiled_enviro[(0, 1)])
         self.unsuccesful_forward_step_tester(pre_occupied_cell=(0, 1))
 
     def wall_and_corner_tester(
@@ -330,221 +319,6 @@ class swarm_agent_tester(unittest.TestCase):
             ],
         )
 
-    def object_type_tester(
-        self,
-        correct_object: ObjectType,
-        error_message: str,
-        direction: Direction = Direction.UP,
-        different_starting_cell: Tuple[int, int] = None,
-    ) -> None:
-
-        if different_starting_cell:
-            self.swarm_agent = self.start_on_different_cell(
-                different_starting_cell=different_starting_cell
-            )
-
-        self.swarm_agent.current_direction_facing = direction
-
-        nearest_object = self.swarm_agent.get_type_of_nearest_object(
-            tile_grid=self.tiled_enviro.tile_grid
-        )
-
-        self.assertEqual(nearest_object, correct_object, error_message)
-
-    def test_top_left_corner_is_detected_when_on_that_tile(self):
-        self.object_type_tester(
-            correct_object=ObjectType.CORNER,
-            error_message="Top left corner not detected",
-        )
-
-    def test_top_right_corner_is_detected_when_on_that_tile(self):
-        self.object_type_tester(
-            different_starting_cell=(0, 4),
-            correct_object=ObjectType.CORNER,
-            error_message="Top right corner not detected",
-        )
-
-    def test_top_wall_is_detected_when_on_that_tile(self):
-        self.object_type_tester(
-            different_starting_cell=(0, 1),
-            correct_object=ObjectType.WALL,
-            error_message="Top wall not detected",
-        )
-
-    def test_bottom_wall_is_detected_when_on_that_tile(self):
-        self.object_type_tester(
-            different_starting_cell=(4, 1),
-            correct_object=ObjectType.WALL,
-            error_message="Top wall not detected",
-        )
-
-    def test_no_wall_is_detected_when_on_that_tile(self):
-        self.object_type_tester(
-            different_starting_cell=(2, 2),
-            correct_object=ObjectType.NONE,
-            error_message="no walls not detected",
-        )
-
-    def test_top_wall_is_detected_when_one_tile_below(self):
-        self.object_type_tester(
-            different_starting_cell=(1, 1),
-            correct_object=ObjectType.WALL,
-            direction=Direction.UP,
-            error_message="Top wall not detected when one tile below",
-        )
-
-    def test_right_wall_is_detected_when_one_tile_left(self):
-        self.object_type_tester(
-            different_starting_cell=(1, 3),
-            correct_object=ObjectType.WALL,
-            direction=Direction.RIGHT,
-            error_message="right wall not detected when one tile right",
-        )
-
-    def test_agent_detect_when_facing_occupied_tile(self):
-        SwarmAgent(id=2, starting_cell=self.tiled_enviro.tile_grid[(0, 1)])
-
-        self.object_type_tester(
-            different_starting_cell=(1, 1),
-            correct_object=ObjectType.AGENT,
-            direction=Direction.UP,
-            error_message="Not detecting agent when one below one on empty tile",
-        )
-
-    def test_agent_doesnt_detect_when_not_facing_occupied_tile(self):
-        SwarmAgent(id=2, starting_cell=self.tiled_enviro.tile_grid[(0, 1)])
-
-        self.object_type_tester(
-            different_starting_cell=(1, 1),
-            correct_object=ObjectType.NONE,
-            direction=Direction.DOWN,
-            error_message=(
-                "Detecting agent when one below on empty tile but not facing agent"
-            ),
-        )
-
-    def relative_postion_motion_tester(
-        self,
-        correct_relative_position_or_motion: Union[RelativePosition, RelativeMotion],
-        obj_description: str,
-        different_starting_cell: Tuple[int, int] = None,
-        agent_direction: Direction = Direction.RIGHT,
-    ) -> None:
-        if different_starting_cell:
-            self.swarm_agent = self.start_on_different_cell(
-                different_starting_cell=different_starting_cell
-            )
-
-        if isinstance(correct_relative_position_or_motion, RelativePosition):
-            func = self.swarm_agent.get_relative_position_of_object
-        elif isinstance(correct_relative_position_or_motion, RelativeMotion):
-            func = self.swarm_agent.get_relative_motion_of_object
-
-        self.swarm_agent.current_direction_facing = agent_direction
-
-        current_relative_position_or_motion = func(
-            tile_walls=self.tiled_enviro.tile_grid[self.swarm_agent.current_cell][
-                "walls"
-            ]
-        )
-
-        self.assertEqual(
-            current_relative_position_or_motion,
-            correct_relative_position_or_motion,
-            (
-                f"Didn't return {obj_description} is {correct_relative_position_or_motion} when facing {agent_direction}"
-            ),
-        )
-
-    def test_agent_returns_left_of_top_left_corner_when_facing_right(self):
-        self.relative_postion_motion_tester(
-            correct_relative_position_or_motion=RelativePosition.LEFT,
-            obj_description="top left corner",
-        )
-
-    def test_agent_returns_right_of_top_left_corner_when_facing_left(self):
-        self.relative_postion_motion_tester(
-            correct_relative_position_or_motion=RelativePosition.RIGHT,
-            obj_description="top left corner",
-            agent_direction=Direction.LEFT,
-        )
-
-    def test_agent_returns_left_of_top_left_corner_when_facing_up(self):
-        self.relative_postion_motion_tester(
-            correct_relative_position_or_motion=RelativePosition.LEFT,
-            obj_description="top left corner",
-            agent_direction=Direction.UP,
-        )
-
-    def test_agent_returns_right_of_top_left_corner_when_facing_down(self):
-        self.relative_postion_motion_tester(
-            correct_relative_position_or_motion=RelativePosition.RIGHT,
-            obj_description="top left corner",
-            agent_direction=Direction.DOWN,
-        )
-
-    def test_agent_returns_top_wall_is_behind_when_facing_down(self):
-        self.relative_postion_motion_tester(
-            correct_relative_position_or_motion=RelativePosition.BEHIND,
-            obj_description="top wall",
-            different_starting_cell=(0, 2),
-            agent_direction=Direction.DOWN,
-        )
-
-    def test_agent_returns_bottom_left_corner_is_right_when_facing_up(self):
-        self.relative_postion_motion_tester(
-            correct_relative_position_or_motion=RelativePosition.RIGHT,
-            obj_description="bottom left corner",
-            different_starting_cell=(4, 4),
-            agent_direction=Direction.UP,
-        )
-
-    def test_agent_returns_bottom_wall_is_front_when_facing_down(self):
-        self.relative_postion_motion_tester(
-            correct_relative_position_or_motion=RelativePosition.FRONT,
-            obj_description="bottom wall",
-            different_starting_cell=(4, 1),
-            agent_direction=Direction.DOWN,
-        )
-
-    def test_agent_is_approaching_corner_when_facing_in_to_it(self):
-        self.relative_postion_motion_tester(
-            correct_relative_position_or_motion=RelativeMotion.APPROACHING,
-            obj_description="top left corner",
-            agent_direction=Direction.UP,
-        )
-
-    def test_agent_is_escaping_corner_when_facing_away_from_it(self):
-        self.relative_postion_motion_tester(
-            correct_relative_position_or_motion=RelativeMotion.ESCAPING,
-            obj_description="top left corner",
-            agent_direction=Direction.DOWN,
-        )
-
-    def test_agent_is_escaping_from_top_wall_when_right_to_wall(self):
-        self.relative_postion_motion_tester(
-            correct_relative_position_or_motion=RelativeMotion.ESCAPING,
-            obj_description="top wall",
-            different_starting_cell=(0, 1),
-            agent_direction=Direction.RIGHT,
-        )
-
-    def test_agent_is_escaping_from_top_wall_when_left_to_wall(self):
-        self.relative_postion_motion_tester(
-            correct_relative_position_or_motion=RelativeMotion.ESCAPING,
-            obj_description="top wall",
-            different_starting_cell=(0, 1),
-            agent_direction=Direction.LEFT,
-        )
-
-    def test_agent_is_escaping_from_bottom_wall_when_infront_of_wall(self):
-        self.relative_postion_motion_tester(
-            correct_relative_position_or_motion=RelativeMotion.ESCAPING,
-            obj_description="bottom wall",
-            different_starting_cell=(4, 1),
-            agent_direction=Direction.UP,
-        )
-
     def state_tester(
         self,
         correct_navigation_states: List[
@@ -562,7 +336,7 @@ class swarm_agent_tester(unittest.TestCase):
         self.swarm_agent.current_direction_facing = agent_direction
 
         current_navigation_states = self.swarm_agent.get_navigation_states(
-            self.tiled_enviro.tile_grid
+            self.tiled_enviro
         )
 
         for current_state, correct_state in zip(
@@ -655,6 +429,30 @@ class swarm_agent_tester(unittest.TestCase):
             different_starting_cell=(1, 0),
         )
 
+    def test_agent_returns_correct_state_facing_up_left_of_right_wall(self):
+        self.state_tester(
+            correct_navigation_states=[
+                ObjectType.WALL,
+                RelativeMotion.ESCAPING,
+                RelativePosition.RIGHT,
+            ],
+            obj_description="right wall",
+            agent_direction=Direction.UP,
+            different_starting_cell=(1, 4),
+        )
+
+    def test_agent_returns_correct_state_facing_down_left_of_right_wall(self):
+        self.state_tester(
+            correct_navigation_states=[
+                ObjectType.WALL,
+                RelativeMotion.ESCAPING,
+                RelativePosition.LEFT,
+            ],
+            obj_description="right wall",
+            agent_direction=Direction.DOWN,
+            different_starting_cell=(1, 4),
+        )
+
     def test_agent_returns_correct_state_facing_empty_tiles(self):
         self.state_tester(
             correct_navigation_states=[
@@ -691,10 +489,24 @@ class swarm_agent_tester(unittest.TestCase):
             different_starting_cell=(1, 3),
         )
 
-    def test_agent_returns_correct_state_facing_top_left_corner_but_agent_on_right(
+    def test_agent_returns_correct_state_when_one_tile_right_and_facing_away_right_wall(
         self,
     ):
-        SwarmAgent(id=2, starting_cell=self.tiled_enviro.tile_grid[(0, 1)])
+        self.state_tester(
+            correct_navigation_states=[
+                ObjectType.NONE,
+                RelativeMotion.APPROACHING,
+                RelativePosition.FRONT,
+            ],
+            obj_description="none",
+            agent_direction=Direction.LEFT,
+            different_starting_cell=(1, 3),
+        )
+
+    def test_agent_returns_correct_state_facing_top_left_corner_with_agent_on_right(
+        self,
+    ):
+        SwarmAgent(id=2, starting_cell=self.tiled_enviro[(0, 1)])
 
         self.state_tester(
             correct_navigation_states=[
@@ -706,10 +518,10 @@ class swarm_agent_tester(unittest.TestCase):
             agent_direction=Direction.UP,
         )
 
-    def test_agent_returns_correct_state_at_top_left_corner_but_facing_agent_on_right(
+    def test_agent_returns_correct_state_at_top_left_corner_facing_agent_on_right(
         self,
     ):
-        SwarmAgent(id=2, starting_cell=self.tiled_enviro.tile_grid[(0, 1)])
+        SwarmAgent(id=2, starting_cell=self.tiled_enviro[(0, 1)])
 
         self.state_tester(
             correct_navigation_states=[
@@ -724,7 +536,7 @@ class swarm_agent_tester(unittest.TestCase):
     def test_agent_returns_correct_state_at_top_left_corner_but_facing_away_from_agent(
         self,
     ):
-        SwarmAgent(id=2, starting_cell=self.tiled_enviro.tile_grid[(0, 1)])
+        SwarmAgent(id=2, starting_cell=self.tiled_enviro[(0, 1)])
 
         self.state_tester(
             correct_navigation_states=[
@@ -736,8 +548,8 @@ class swarm_agent_tester(unittest.TestCase):
             agent_direction=Direction.LEFT,
         )
 
-    def test_agent_returns_correct_state_facing_agent_on_empty_square(self):
-        SwarmAgent(id=2, starting_cell=self.tiled_enviro.tile_grid[(0, 1)])
+    def test_agent_returns_correct_state_facing_agent_on_an_empty_square(self):
+        SwarmAgent(id=2, starting_cell=self.tiled_enviro[(0, 1)])
 
         self.state_tester(
             correct_navigation_states=[
@@ -751,7 +563,7 @@ class swarm_agent_tester(unittest.TestCase):
         )
 
     def test_agent_returns_correct_state_facing_agent_on_left_wall_square(self):
-        SwarmAgent(id=2, starting_cell=self.tiled_enviro.tile_grid[(1, 1)])
+        SwarmAgent(id=2, starting_cell=self.tiled_enviro[(1, 1)])
 
         self.state_tester(
             correct_navigation_states=[

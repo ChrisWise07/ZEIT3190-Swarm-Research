@@ -1,7 +1,7 @@
-from typing import Dict, List, Tuple
-from .tiled_environment import TiledEnvironment
-from .tile_properties import TileColour
+from typing import Dict, Tuple
 from numpy import ndarray
+from .tile_properties import TileColour
+from .swarm_agent_enums import ObjectType
 
 
 def navigate_tile_grid_and_call_function_over_range(
@@ -29,7 +29,20 @@ def count_of_tile_colour(tile_grid: ndarray, colour: TileColour):
     )
 
 
-def return_ratio_of_white_to_black_tiles(tiled_environment: TiledEnvironment):
-    return count_of_tile_colour(
-        tile_grid=tiled_environment.tile_grid, colour=TileColour.WHITE
-    ) / (tiled_environment.height * tiled_environment.width)
+def return_ratio_of_white_to_black_tiles(tile_grid: ndarray, height: int, width: int):
+    return count_of_tile_colour(tile_grid=tile_grid, colour=TileColour.WHITE) / (
+        height * width
+    )
+
+
+def validate_cell(new_cell: Tuple[int, int], grid_shape: Tuple[int, int]) -> bool:
+    return all(
+        [
+            (row_or_col >= 0 and row_or_col < dimension)
+            for row_or_col, dimension in zip(new_cell, grid_shape)
+        ]
+    )
+
+
+def get_object_type_based_on_num_wall(num_of_walls: int) -> ObjectType:
+    return {0: ObjectType.NONE, 1: ObjectType.WALL, 2: ObjectType.CORNER}[num_of_walls]
