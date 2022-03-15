@@ -31,20 +31,18 @@ class tiled_environment_tester(unittest.TestCase):
         tile_grid: ndarray,
         coordinate: Tuple[int, int],
     ):
-        with self.subTest():
-            for wall in correct_walls:
-                self.assertIn(
-                    wall,
-                    tile_grid[coordinate]["walls"],
-                    error_message,
-                )
+        for wall in tile_grid[coordinate]["walls"]:
+            self.assertIn(
+                wall,
+                correct_walls,
+                error_message,
+            )
 
-            for wall in incorrect_walls:
-                self.assertNotIn(
-                    wall,
-                    tile_grid[coordinate]["walls"],
-                    error_message,
-                )
+            self.assertNotIn(
+                wall,
+                incorrect_walls,
+                error_message,
+            )
 
     def colour_tester(
         self,
@@ -62,10 +60,10 @@ class tiled_environment_tester(unittest.TestCase):
             row_range=(0, 1),
             column_range=(0, 1),
             func_config={
-                "correct_walls": [WallType.LEFT_WALL, WallType.TOP_WALL],
+                "correct_walls": [WallType.TOP_WALL, WallType.LEFT_WALL],
                 "incorrect_walls": [WallType.BOTTOM_WALL, WallType.RIGHT_WALL],
-                "tile_grid": self.tiled_enviro,
                 "error_message": "top left corner is not correct",
+                "tile_grid": self.tiled_enviro,
             },
             func=self.wall_tester,
         )
