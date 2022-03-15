@@ -2,6 +2,7 @@ from numpy import ndarray
 
 from dataclasses import dataclass, field, InitVar
 from typing import Any, Dict, List, Tuple, Set
+from .tile_properties import WallType
 from .swarm_agent_enums import (
     Direction,
     RelativeMotion,
@@ -44,7 +45,7 @@ class SwarmAgent:
     def return_reward(self) -> int:
         return int(not (self.current_cell in self.cells_visited))
 
-    def __return_new_cell_coordinate(self) -> Tuple[int, int]:
+    def __return_next_cell_coordinate(self) -> Tuple[int, int]:
         return {
             Direction.RIGHT: (self.current_cell[0], self.current_cell[1] + 1),
             Direction.DOWN: (self.current_cell[0] + 1, self.current_cell[1]),
@@ -63,7 +64,7 @@ class SwarmAgent:
         )
 
     def forward_step(self, tile_grid: ndarray) -> None:
-        new_cell = self.__return_new_cell_coordinate()
+        new_cell = self.__return_next_cell_coordinate()
         old_cell = self.current_cell
 
         if self.validate_cell(
@@ -93,12 +94,12 @@ class SwarmAgent:
         else:
             # agents have precedence over walls when detecting
             # objects on the next tile along
-            next_tile_along = tile_grid[self.__return_new_cell_coordinate()]
+            next_tile_along = tile_grid[self.__return_next_cell_coordinate()]
 
             if next_tile_along["occupied"]:
                 return ObjectType.AGENT
             else:
-                next_tile_along_walls = tile_grid[self.__return_new_cell_coordinate()][
+                next_tile_along_walls = tile_grid[self.__return_next_cell_coordinate()][
                     "walls"
                 ]
                 return self.__return_object_type_based_on_num_wall(
@@ -115,31 +116,68 @@ class SwarmAgent:
             3: RelativePosition.RIGHT,
         }[(self.current_direction_facing.value - wall_number) % 4]
 
-    def wall_is_on_left_or_right(self, wall_value: int):
-        if wall_value != self.current_direction_facing.value:
-            return (self.current_direction_facing.value - wall_value) % 4 != 2
-        else:
-            return False
+    def get_relative_position_of_object(
+        self, tile_walls: List[WallType]
+    ) -> RelativePosition:
 
-    def get_relative_position_of_object(self, tile: Dict) -> RelativePosition:
-        tile_walls = tile["walls"]
-
-        if len(tile_walls) > 1:
+        if len(tile_walls) >= 2:
             tile_walls = [
                 wall
-                for wall in tile["walls"]
-                if self.wall_is_on_left_or_right(wall.value)
+                for wall in tile_walls
+                if ((self.current_direction_facing.value - wall.value) % 4 in [1, 3])
             ]
 
         return self.__return_relative_postion_given_a_wall(
             wall_number=tile_walls.pop(0).value
         )
 
-    def get_relative_motion_of_object(self, tile: Dict) -> RelativeMotion:
-        tile_walls = tile["walls"]
-
+    def get_relative_motion_of_object(
+        self, tile_walls: List[WallType]
+    ) -> RelativeMotion:
         for wall in tile_walls:
             if wall.value == self.current_direction_facing.value:
                 return RelativeMotion.APPROACHING
 
         return RelativeMotion.ESCAPING
+
+    def __call_each_state_function_for_tile(
+        self, tile_walls: List[WallType]
+    ) -> Tuple[ObjectType, RelativeMotion, RelativePosition]:
+        if not (len(tile_walls)):
+            return ObjectType.NONE, RelativeMotion.APPROACHING, RelativePosition.FRONT
+        else:
+            return (
+                self.__return_object_type_based_on_num_wall(
+                    num_of_walls=len(tile_walls)
+                ),
+                self.get_relative_motion_of_object(tile_walls=tile_walls),
+                self.get_relative_position_of_object(tile_walls=tile_walls),
+            )
+
+    def get_navigation_states(
+        self, tile_grid: ndarray
+    ) -> Tuple[ObjectType, RelativeMotion, RelativePosition]:
+
+        current_tile = tile_grid[self.current_cell]
+
+        next_tile_coordinates = self.__return_next_cell_coordinate()
+
+        if self.validate_cell(next_tile_coordinates, grid_shape=tile_grid.shape):
+            next_tile_along = tile_grid[next_tile_coordinates]
+            if next_tile_along["occupied"]:
+                return (
+                    ObjectType.AGENT,
+                    RelativeMotion.APPROACHING,
+                    RelativePosition.FRONT,
+                )
+
+        # only corners and edges will not have a next cell along if facing into them
+        # and the statement below will be true then, so no need for next_tile_along
+        if current_tile["walls"]:
+            return self.__call_each_state_function_for_tile(
+                tile_walls=current_tile["walls"]
+            )
+        else:
+            return self.__call_each_state_function_for_tile(
+                tile_walls=next_tile_along["walls"]
+            )
