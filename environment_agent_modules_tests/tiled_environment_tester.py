@@ -7,7 +7,7 @@ from typing import Dict, List, Tuple
 ROOT_DIRECTORY = os.path.dirname(os.getcwd())
 sys.path.append(ROOT_DIRECTORY)
 
-from swarm_project_modules import (
+from environment_agent_modules import (
     WallType,
     TileColour,
     create_tile_grid,
