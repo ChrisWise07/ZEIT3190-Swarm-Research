@@ -44,5 +44,5 @@ def validate_cell(new_cell: Tuple[int, int], grid_shape: Tuple[int, int]) -> boo
     )
 
 
-def get_object_type_based_on_num_wall(num_of_walls: int) -> ObjectType:
-    return {0: ObjectType.NONE, 1: ObjectType.WALL, 2: ObjectType.CORNER}[num_of_walls]
+def get_object_type_based_on_num_wall(num_of_walls: int) -> int:
+    return ObjectType(num_of_walls).value

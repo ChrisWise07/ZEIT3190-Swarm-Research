@@ -70,19 +70,15 @@ class SwarmAgent:
             (self.current_direction_facing.value + turn_type.value) % 4
         )
 
-    def __return_relative_postion_given_a_wall(
-        self, wall_number: int
-    ) -> RelativePosition:
+    def __return_relative_postion_given_a_wall(self, wall_number: int) -> int:
         return {
-            0: RelativePosition.FRONT,
-            1: RelativePosition.LEFT,
-            2: RelativePosition.BEHIND,
-            3: RelativePosition.RIGHT,
+            0: RelativePosition.FRONT.value,
+            1: RelativePosition.LEFT.value,
+            2: RelativePosition.BEHIND.value,
+            3: RelativePosition.RIGHT.value,
         }[(self.current_direction_facing.value - wall_number) % 4]
 
-    def __get_relative_position_of_object(
-        self, tile_walls: List[WallType]
-    ) -> RelativePosition:
+    def __get_relative_position_of_object(self, tile_walls: List[WallType]) -> int:
 
         if len(tile_walls) >= 2:
             tile_walls = [
@@ -95,20 +91,22 @@ class SwarmAgent:
             wall_number=tile_walls.pop(0).value
         )
 
-    def __get_relative_motion_of_object(
-        self, tile_walls: List[WallType]
-    ) -> RelativeMotion:
+    def __get_relative_motion_of_object(self, tile_walls: List[WallType]) -> int:
         for wall in tile_walls:
             if wall.value == self.current_direction_facing.value:
-                return RelativeMotion.APPROACHING
+                return RelativeMotion.APPROACHING.value
 
-        return RelativeMotion.ESCAPING
+        return RelativeMotion.ESCAPING.value
 
     def __call_each_state_function_for_tile(
         self, tile_walls: List[WallType]
-    ) -> Tuple[ObjectType, RelativeMotion, RelativePosition]:
+    ) -> Tuple[int, int, int]:
         if not (len(tile_walls)):
-            return ObjectType.NONE, RelativeMotion.APPROACHING, RelativePosition.FRONT
+            return (
+                ObjectType.NONE.value,
+                RelativeMotion.APPROACHING.value,
+                RelativePosition.FRONT.value,
+            )
         else:
             return (
                 get_object_type_based_on_num_wall(num_of_walls=len(tile_walls)),
@@ -116,9 +114,7 @@ class SwarmAgent:
                 self.__get_relative_position_of_object(tile_walls=tile_walls),
             )
 
-    def get_navigation_states(
-        self, tile_grid: ndarray
-    ) -> Tuple[ObjectType, RelativeMotion, RelativePosition]:
+    def get_navigation_states(self, tile_grid: ndarray) -> Tuple[int, int, int]:
 
         current_tile = tile_grid[self.current_cell]
 
@@ -130,9 +126,9 @@ class SwarmAgent:
             # objects on the next tile along
             if next_tile_along["occupied"]:
                 return (
-                    ObjectType.AGENT,
-                    RelativeMotion.APPROACHING,
-                    RelativePosition.FRONT,
+                    ObjectType.AGENT.value,
+                    RelativeMotion.APPROACHING.value,
+                    RelativePosition.FRONT.value,
                 )
 
         # only corners and edges will not have a next cell along if facing into them
