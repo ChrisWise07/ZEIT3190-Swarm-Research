@@ -36,8 +36,8 @@ class SwarmAgent:
             tile["occupied"] = True
             self.current_cell = tile["id"]
             return True
-        else:
-            return False
+
+        return False
 
     def leave_cell(self, tile: Dict) -> None:
         tile["occupied"] = False
@@ -54,7 +54,7 @@ class SwarmAgent:
             Direction.UP.value: (self.current_cell[0] - 1, self.current_cell[1]),
         }[self.current_direction_facing]
 
-    def forward_step(self, tile_grid: np.ndarray) -> bool:
+    def forward_step(self, tile_grid: np.ndarray) -> None:
         new_cell = self.__return_next_cell_coordinate()
         old_cell = self.current_cell
 
@@ -91,19 +91,18 @@ class SwarmAgent:
                 RelativeMotion.APPROACHING.value,
                 RelativePosition.FRONT.value,
             )
-        else:
-            return (
-                len(tile_walls),
-                self.__get_relative_motion_of_object(tile_walls=tile_walls),
-                self.__get_relative_position_of_object(tile_walls=tile_walls),
-            )
+
+        return (
+            len(tile_walls),
+            self.__get_relative_motion_of_object(tile_walls=tile_walls),
+            self.__get_relative_position_of_object(tile_walls=tile_walls),
+        )
 
     def get_navigation_states(self, tile_grid: np.ndarray) -> Tuple[int, int, int]:
-
         current_tile = tile_grid[self.current_cell]
         next_tile_coordinates = self.__return_next_cell_coordinate()
 
-        if validate_cell(next_tile_coordinates, grid_shape=tile_grid.shape):
+        if validate_cell(new_cell=next_tile_coordinates, grid_shape=tile_grid.shape):
             next_tile_along = tile_grid[next_tile_coordinates]
             # agents have precedence over walls when detecting
             # objects on the next tile along
@@ -120,10 +119,10 @@ class SwarmAgent:
             return self.__call_each_state_function_for_tile(
                 tile_walls=current_tile["walls"]
             )
-        else:
-            return self.__call_each_state_function_for_tile(
-                tile_walls=next_tile_along["walls"]
-            )
+
+        return self.__call_each_state_function_for_tile(
+            tile_walls=next_tile_along["walls"]
+        )
 
     def perform_navigation_action(self, action: int, tile_grid: np.ndarray) -> None:
         self.add_cell_to_visited_list(self.current_cell)
