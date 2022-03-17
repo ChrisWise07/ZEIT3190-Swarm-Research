@@ -25,7 +25,7 @@ def count_of_tile_colour(tile_grid: ndarray, colour: TileColour):
         row_range=(0, tile_grid.shape[0]),
         column_range=(0, tile_grid.shape[1]),
         func_config={},
-        func=lambda coordinate: (tile_grid[coordinate]["colour"] == colour),
+        func=lambda coordinate: (TileColour(tile_grid[coordinate]["colour"]) == colour),
     )
 
 

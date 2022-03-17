@@ -118,9 +118,11 @@ class swarm_agent_tester(unittest.TestCase):
 
         starting_cell = self.swarm_agent.current_cell
 
-        self.swarm_agent.current_direction_facing = agent_direction
+        self.swarm_agent.current_direction_facing = agent_direction.value
 
         self.swarm_agent.forward_step(self.tiled_enviro)
+
+        self.swarm_agent.add_cell_to_visited_list(starting_cell)
 
         with self.subTest():
             self.assertEqual(
@@ -184,9 +186,11 @@ class swarm_agent_tester(unittest.TestCase):
 
         starting_cell = self.swarm_agent.current_cell
 
-        self.swarm_agent.current_direction_facing = agent_direction
+        self.swarm_agent.current_direction_facing = agent_direction.value
 
         self.swarm_agent.forward_step(self.tiled_enviro)
+
+        self.swarm_agent.add_cell_to_visited_list(starting_cell)
 
         with self.subTest():
             self.assertEqual(
@@ -275,12 +279,12 @@ class swarm_agent_tester(unittest.TestCase):
         correction_directions: List[Direction],
         starting_direction: Direction = Direction.UP,
     ) -> None:
-        self.swarm_agent.current_direction_facing = starting_direction
+        self.swarm_agent.current_direction_facing = starting_direction.value
         for rotation, correction_direction in zip(rotations, correction_directions):
-            self.swarm_agent.turn(turn_type=rotation)
+            self.swarm_agent.turn(turn_type=rotation.value)
             self.assertEqual(
                 self.swarm_agent.current_direction_facing,
-                correction_direction,
+                correction_direction.value,
                 f"Turning to the {rotation} to ended up in {correction_direction} didn't work",
             )
 
@@ -333,7 +337,7 @@ class swarm_agent_tester(unittest.TestCase):
                 different_starting_cell=different_starting_cell
             )
 
-        self.swarm_agent.current_direction_facing = agent_direction
+        self.swarm_agent.current_direction_facing = agent_direction.value
 
         current_navigation_states = self.swarm_agent.get_navigation_states(
             self.tiled_enviro
@@ -344,7 +348,7 @@ class swarm_agent_tester(unittest.TestCase):
         ):
             self.assertEqual(
                 current_state,
-                correct_state,
+                correct_state.value,
                 (
                     f"{correct_state} not returned when facing {agent_direction} at {self.swarm_agent.current_cell} observing {obj_description}"
                 ),

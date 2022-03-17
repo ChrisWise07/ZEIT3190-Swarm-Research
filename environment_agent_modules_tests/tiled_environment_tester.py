@@ -33,13 +33,13 @@ class tiled_environment_tester(unittest.TestCase):
     ):
         for wall in tile_grid[coordinate]["walls"]:
             self.assertIn(
-                wall,
+                WallType(wall),
                 correct_walls,
                 error_message,
             )
 
             self.assertNotIn(
-                wall,
+                WallType(wall),
                 incorrect_walls,
                 error_message,
             )
@@ -52,7 +52,9 @@ class tiled_environment_tester(unittest.TestCase):
         coordinate: Tuple[int, int],
     ):
         with self.subTest():
-            self.assertEqual(tile_grid[coordinate]["colour"], colour, error_message)
+            self.assertEqual(
+                TileColour(tile_grid[coordinate]["colour"]), colour, error_message
+            )
 
     def test_tiled_enviro_has_correct_corners_in_correct_places(self):
         # top_left_corner

@@ -1,7 +1,7 @@
 import numpy as np
 import gym
 from gym import spaces
-from environment_agent_modules import create_tile_grid, SwarmAgent, Turn
+from environment_agent_modules import create_tile_grid, SwarmAgent
 
 
 class TiledEnvForNavigation(gym.Env):
@@ -11,12 +11,9 @@ class TiledEnvForNavigation(gym.Env):
         self.observation_space = spaces.Box(low=0, high=4, shape=(3,), dtype=int)
 
     def step(self, action):
-        if action == 0:
-            self.swarm_agent.forward_step(tile_grid=self.tile_grid)
-        elif action == 1:
-            self.swarm_agent.turn(turn_type=Turn.RIGHT)
-        elif action == 2:
-            self.swarm_agent.turn(turn_type=Turn.LEFT)
+        self.swarm_agent.perform_navigation_action(
+            action=action, tile_grid=self.tile_grid
+        )
 
         return (
             np.array(self.swarm_agent.get_navigation_states(self.tile_grid)),
