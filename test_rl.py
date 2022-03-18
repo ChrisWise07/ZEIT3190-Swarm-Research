@@ -3,7 +3,7 @@ import os
 from basic_tiled_environment import TiledEnvForNavigation
 import time
 
-current_time = int(time.time())
+current_time = time.asctime().strip().replace(" ", "")
 
 models_dir = f"models/{current_time}/"
 logdir = f"logs/{current_time}/"
@@ -21,11 +21,12 @@ model = PPO("MlpPolicy", env, verbose=1, tensorboard_log=logdir)
 
 TIMESTEPS = 10000
 iters = 0
+
 while True:
     iters += 1
     model.learn(
         total_timesteps=TIMESTEPS,
         reset_num_timesteps=False,
-        tb_log_name=f"PPO{current_time}",
+        tb_log_name=f"PPO({current_time})",
     )
     model.save(f"{models_dir}/{TIMESTEPS*iters}")
