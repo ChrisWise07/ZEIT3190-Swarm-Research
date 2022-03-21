@@ -6,7 +6,6 @@ from .tile_properties import WallType
 from .utils import validate_cell
 from .swarm_agent_enums import (
     Direction,
-    RelativeMotion,
     Turn,
     ObjectType,
     RelativePosition,
@@ -76,52 +75,39 @@ class SwarmAgent:
 
         return (self.current_direction_facing - tile_walls[0]) % 4
 
-    def __get_relative_motion_of_object(self, tile_walls: List[WallType]) -> int:
-        if self.current_direction_facing in tile_walls:
-            return RelativeMotion.APPROACHING.value
-
-        return RelativeMotion.ESCAPING.value
-
     def __call_each_state_function_for_tile(
         self, tile_walls: List[WallType]
     ) -> Tuple[int, int, int]:
         if not (len(tile_walls)):
             return (
                 ObjectType.NONE.value,
-                RelativeMotion.APPROACHING.value,
                 RelativePosition.FRONT.value,
             )
 
         return (
             len(tile_walls),
-            self.__get_relative_motion_of_object(tile_walls=tile_walls),
             self.__get_relative_position_of_object(tile_walls=tile_walls),
         )
 
-    def get_navigation_states(self, tile_grid: np.ndarray) -> Tuple[int, int, int]:
-        current_tile = tile_grid[self.current_cell]
+    def get_navigation_states(self, tile_grid: np.ndarray) -> Tuple[int, int]:
         next_tile_coordinates = self.__return_next_cell_coordinate()
 
         if validate_cell(new_cell=next_tile_coordinates, grid_shape=tile_grid.shape):
             next_tile_along = tile_grid[next_tile_coordinates]
-            # agents have precedence over walls when detecting
-            # objects on the next tile along
+            # other agents have precedence when detecting objects on the next tile along
             if next_tile_along["occupied"]:
                 return (
                     ObjectType.AGENT.value,
-                    RelativeMotion.APPROACHING.value,
                     RelativePosition.FRONT.value,
                 )
 
-        # only corners and edges will not have a next cell along if facing into them
-        # and the statement below will be true then, so no need for next_tile_along
-        if current_tile["walls"]:
             return self.__call_each_state_function_for_tile(
-                tile_walls=current_tile["walls"]
+                tile_walls=next_tile_along["walls"]
             )
 
+        # agent is facing into a corner or wall
         return self.__call_each_state_function_for_tile(
-            tile_walls=next_tile_along["walls"]
+            tile_walls=tile_grid[self.current_cell]["walls"]
         )
 
     def perform_navigation_action(self, action: int, tile_grid: np.ndarray) -> None:

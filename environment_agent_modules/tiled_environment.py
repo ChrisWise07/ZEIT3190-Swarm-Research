@@ -81,14 +81,14 @@ def non_clustered_environment(
 def clustered_environment(
     width: int,
     height: int,
-    ratio_of_white_to_black_tiles: float,
+    ratio_of_inital_to_non_inital_tile: float,
     tile_grid: np.ndarray,
     tile_walls_to_coordinates_map: Dict[str, List[int]],
-    intial_tile_colour: TileColour,
-    non_intial_tile_colour: TileColour,
+    intial_tile_colour: int,
+    non_intial_tile_colour: int,
 ):
     portion_of_remaining_column, num_of_full_columns = modf(
-        width * ratio_of_white_to_black_tiles
+        width * ratio_of_inital_to_non_inital_tile
     )
 
     row_number_of_last_intial_tile = int(round(portion_of_remaining_column * height))
@@ -96,13 +96,13 @@ def clustered_environment(
     for row in range(height):
         for column in range(width):
             if column < num_of_full_columns:
-                colour = intial_tile_colour.value
+                colour = intial_tile_colour
             elif (column == num_of_full_columns) and (
                 row < row_number_of_last_intial_tile
             ):
-                colour = intial_tile_colour.value
+                colour = intial_tile_colour
             else:
-                colour = non_intial_tile_colour.value
+                colour = non_intial_tile_colour
 
             tile_grid[(row, column)] = tile_creator(
                 colour=colour,
@@ -113,45 +113,53 @@ def clustered_environment(
     return tile_grid
 
 
-def create_tile_grid(
+def create_clustered_inital_observation_useful_tile_grid(
     width: int,
     height: int,
     ratio_of_white_to_black_tiles: float = 0.5,
-    clustered: bool = False,
-    initial_observations_helpful: bool = True,
 ) -> np.ndarray:
-    tile_grid = np.empty((height, width), dtype=object)
-
-    tile_walls_to_coordinates_map = return_coordinate_to_walls_dict(
-        width=width, height=height
+    return clustered_environment(
+        width=width,
+        height=height,
+        ratio_of_inital_to_non_inital_tile=ratio_of_white_to_black_tiles,
+        tile_grid=np.empty((height, width), dtype=object),
+        tile_walls_to_coordinates_map=return_coordinate_to_walls_dict(
+            width=width, height=height
+        ),
+        intial_tile_colour=TileColour.WHITE.value,
+        non_intial_tile_colour=TileColour.BLACK.value,
     )
 
-    if clustered:
-        if initial_observations_helpful:
-            return clustered_environment(
-                width=width,
-                height=height,
-                ratio_of_white_to_black_tiles=ratio_of_white_to_black_tiles,
-                tile_grid=tile_grid,
-                tile_walls_to_coordinates_map=tile_walls_to_coordinates_map,
-                intial_tile_colour=TileColour.WHITE,
-                non_intial_tile_colour=TileColour.BLACK,
-            )
-        else:
-            return clustered_environment(
-                width=width,
-                height=height,
-                ratio_of_white_to_black_tiles=ratio_of_white_to_black_tiles,
-                tile_grid=tile_grid,
-                tile_walls_to_coordinates_map=tile_walls_to_coordinates_map,
-                intial_tile_colour=TileColour.BLACK,
-                non_intial_tile_colour=TileColour.WHITE,
-            )
-    else:
-        return non_clustered_environment(
-            width=width,
-            height=height,
-            ratio_of_white_to_black_tiles=ratio_of_white_to_black_tiles,
-            tile_grid=tile_grid,
-            tile_walls_to_coordinates_map=tile_walls_to_coordinates_map,
-        )
+
+def create_clustered_inital_observation_not_useful_tile_grid(
+    width: int,
+    height: int,
+    ratio_of_white_to_black_tiles: float = 0.5,
+) -> np.ndarray:
+    return clustered_environment(
+        width=width,
+        height=height,
+        ratio_of_inital_to_non_inital_tile=(1 - ratio_of_white_to_black_tiles),
+        tile_grid=np.empty((height, width), dtype=object),
+        tile_walls_to_coordinates_map=return_coordinate_to_walls_dict(
+            width=width, height=height
+        ),
+        intial_tile_colour=TileColour.BLACK.value,
+        non_intial_tile_colour=TileColour.WHITE.value,
+    )
+
+
+def create_nonclustered_tile_grid(
+    width: int,
+    height: int,
+    ratio_of_white_to_black_tiles: float = 0.5,
+) -> np.ndarray:
+    return non_clustered_environment(
+        width=width,
+        height=height,
+        ratio_of_white_to_black_tiles=ratio_of_white_to_black_tiles,
+        tile_grid=np.empty((height, width), dtype=object),
+        tile_walls_to_coordinates_map=return_coordinate_to_walls_dict(
+            width=width, height=height
+        ),
+    )

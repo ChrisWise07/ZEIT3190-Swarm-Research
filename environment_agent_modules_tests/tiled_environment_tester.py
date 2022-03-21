@@ -10,15 +10,17 @@ sys.path.append(ROOT_DIRECTORY)
 from environment_agent_modules import (
     WallType,
     TileColour,
-    create_tile_grid,
     navigate_tile_grid_and_call_function_over_range,
     return_ratio_of_white_to_black_tiles,
+    create_nonclustered_tile_grid,
+    create_clustered_inital_observation_not_useful_tile_grid,
+    create_clustered_inital_observation_useful_tile_grid,
 )
 
 
 class tiled_environment_tester(unittest.TestCase):
     def setUp(self) -> None:
-        self.tiled_enviro = create_tile_grid(height=10, width=10)
+        self.tiled_enviro = create_nonclustered_tile_grid(height=10, width=10)
 
     def test_tiled_enviro_creates_np_array_with_correct_dimensions(self):
         self.assertEqual(self.tiled_enviro.shape, (10, 10))
@@ -206,7 +208,7 @@ class tiled_environment_tester(unittest.TestCase):
         )
 
     def test_tiled_enviro_has_approx_correct_ratio_of_white_black_tiles(self):
-        new_tiled_environment = create_tile_grid(
+        new_tiled_environment = create_nonclustered_tile_grid(
             height=15, width=15, ratio_of_white_to_black_tiles=0.7
         )
 
@@ -285,12 +287,10 @@ class tiled_environment_tester(unittest.TestCase):
         )
 
     def test_clustered_initial_observations_helpful_has_white_tiles_first(self):
-        new_tiled_environment = create_tile_grid(
+        new_tiled_environment = create_clustered_inital_observation_useful_tile_grid(
             height=5,
             width=5,
             ratio_of_white_to_black_tiles=0.5,
-            clustered=True,
-            initial_observations_helpful=True,
         )
 
         self.clustered_initial_observations_tester(
@@ -304,12 +304,12 @@ class tiled_environment_tester(unittest.TestCase):
         )
 
     def test_clustered_initial_observations_not_helpful_has_black_tiles_first(self):
-        new_tiled_environment = create_tile_grid(
-            height=5,
-            width=5,
-            ratio_of_white_to_black_tiles=0.5,
-            clustered=True,
-            initial_observations_helpful=False,
+        new_tiled_environment = (
+            create_clustered_inital_observation_not_useful_tile_grid(
+                height=5,
+                width=5,
+                ratio_of_white_to_black_tiles=0.5,
+            )
         )
 
         self.clustered_initial_observations_tester(
@@ -320,6 +320,42 @@ class tiled_environment_tester(unittest.TestCase):
             non_initial_tile_colour=TileColour.WHITE,
             initial_tiles_row_limit=2,
             initial_tiles_column_limit=2,
+        )
+
+    def test_clustered_environment_has_correct_ratio_of_tiles_with_inital_obvs_useful(
+        self,
+    ):
+        new_tiled_environment = create_clustered_inital_observation_useful_tile_grid(
+            height=15,
+            width=15,
+            ratio_of_white_to_black_tiles=0.3,
+        )
+
+        self.assertAlmostEqual(
+            return_ratio_of_white_to_black_tiles(
+                tile_grid=new_tiled_environment, height=15, width=15
+            ),
+            0.3,
+            places=1,
+        )
+
+    def test_clustered_environment_has_correct_ratio_of_tiles_with_inital_obvs_not_useful(
+        self,
+    ):
+        new_tiled_environment = (
+            create_clustered_inital_observation_not_useful_tile_grid(
+                height=15,
+                width=15,
+                ratio_of_white_to_black_tiles=0.25,
+            )
+        )
+
+        self.assertAlmostEqual(
+            return_ratio_of_white_to_black_tiles(
+                tile_grid=new_tiled_environment, height=15, width=15
+            ),
+            0.25,
+            places=1,
         )
 
 
