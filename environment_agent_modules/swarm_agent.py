@@ -104,9 +104,8 @@ class SwarmAgent:
     def perform_navigation_action(self, action: int, tile_grid: np.ndarray) -> None:
         self.add_cell_to_visited_list(self.current_cell)
 
-        if action == 0:
-            self.forward_step(tile_grid=tile_grid)
-        elif action == 1:
-            self.turn(turn_type=Turn.RIGHT.value)
-        elif action == 2:
-            self.turn(turn_type=Turn.LEFT.value)
+        return {
+            0: lambda self, tile_grid: (self.forward_step(tile_grid=tile_grid)),
+            1: lambda self, _: self.turn(turn_type=Turn.LEFT.value),
+            2: lambda self, _: self.turn(turn_type=Turn.RIGHT.value),
+        }[action](self, tile_grid)
