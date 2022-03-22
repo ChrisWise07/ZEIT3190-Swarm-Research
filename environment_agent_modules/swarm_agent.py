@@ -65,29 +65,20 @@ class SwarmAgent:
     def turn(self, turn_type: int) -> None:
         self.current_direction_facing = (self.current_direction_facing + turn_type) % 4
 
-    def __get_relative_position_of_object(self, tile_walls: List[WallType]) -> int:
-        if len(tile_walls) >= 2:
-            tile_walls = [
-                wall
-                for wall in tile_walls
-                if ((self.current_direction_facing - wall) % 4 in [1, 3])
-            ]
-
-        return (self.current_direction_facing - tile_walls[0]) % 4
-
     def __call_each_state_function_for_tile(
         self, tile_walls: List[WallType]
     ) -> Tuple[int, int, int]:
-        if not (len(tile_walls)):
-            return (
-                ObjectType.NONE.value,
+        return {
+            0: lambda _: (ObjectType.NONE.value, RelativePosition.FRONT.value),
+            1: lambda tile_walls: (
+                ObjectType.WALL.value,
+                (self.current_direction_facing - tile_walls[0]) % 4,
+            ),
+            2: lambda _: (
+                ObjectType.CORNER.value,
                 RelativePosition.FRONT.value,
-            )
-
-        return (
-            len(tile_walls),
-            self.__get_relative_position_of_object(tile_walls=tile_walls),
-        )
+            ),
+        }[len(tile_walls)](tile_walls)
 
     def get_navigation_states(self, tile_grid: np.ndarray) -> Tuple[int, int]:
         next_tile_coordinates = self.__return_next_cell_coordinate()

@@ -356,7 +356,7 @@ class swarm_agent_tester(unittest.TestCase):
         self.state_tester(
             correct_navigation_states=[
                 ObjectType.CORNER,
-                RelativePosition.LEFT,
+                RelativePosition.FRONT,
             ],
             obj_description="top left corner",
             agent_direction=Direction.UP,
@@ -385,7 +385,7 @@ class swarm_agent_tester(unittest.TestCase):
         self.state_tester(
             correct_navigation_states=[
                 ObjectType.CORNER,
-                RelativePosition.RIGHT,
+                RelativePosition.FRONT,
             ],
             obj_description="top left corner",
             agent_direction=Direction.LEFT,
@@ -428,7 +428,7 @@ class swarm_agent_tester(unittest.TestCase):
         self.state_tester(
             correct_navigation_states=[
                 ObjectType.CORNER,
-                RelativePosition.RIGHT,
+                RelativePosition.FRONT,
             ],
             obj_description="right wall",
             agent_direction=Direction.UP,
@@ -513,7 +513,7 @@ class swarm_agent_tester(unittest.TestCase):
         self.state_tester(
             correct_navigation_states=[
                 ObjectType.CORNER,
-                RelativePosition.LEFT,
+                RelativePosition.FRONT,
             ],
             obj_description="top left corner",
             agent_direction=Direction.UP,
@@ -541,7 +541,7 @@ class swarm_agent_tester(unittest.TestCase):
         self.state_tester(
             correct_navigation_states=[
                 ObjectType.CORNER,
-                RelativePosition.RIGHT,
+                RelativePosition.FRONT,
             ],
             obj_description="top left corner",
             agent_direction=Direction.LEFT,
