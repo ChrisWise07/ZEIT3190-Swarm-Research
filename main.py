@@ -2,7 +2,6 @@ import argparse
 import json
 import time
 import os
-from typing import Callable
 from constants import EXPERIMENT_DATA_ROOT_DIRECTORY
 from testing_and_training_modules import file_handler
 from experiment_modules_map import experiment_modules_map
@@ -111,7 +110,7 @@ file_handler(
 )
 
 
-def main(args: argparse.Namespace):
+def main(args: argparse.Namespace) -> None:
     func = experiment_modules_map[args.training_testing_module_name]
     func(args, data_directory=current_experiment_data_directory)
 
