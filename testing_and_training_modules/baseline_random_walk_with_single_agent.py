@@ -2,7 +2,6 @@ import numpy as np
 import json
 import argparse
 from random import choice
-from environment_agent_modules import tiled_environment
 from environment_agent_modules import create_nonclustered_tile_grid, SwarmAgent
 from .utils import return_statistical_analysis_data, file_handler
 
