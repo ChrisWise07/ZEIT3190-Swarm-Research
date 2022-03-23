@@ -1,11 +1,6 @@
-import os
-import sys
 import unittest
 from numpy import ndarray
-from typing import Dict, List, Tuple
-
-ROOT_DIRECTORY = os.path.dirname(os.getcwd())
-sys.path.append(ROOT_DIRECTORY)
+from typing import List, Tuple
 
 from environment_agent_modules import (
     WallType,

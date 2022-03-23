@@ -1,10 +1,5 @@
-import os
-import sys
 import unittest
 from typing import List, Tuple, Union
-
-ROOT_DIRECTORY = os.path.dirname(os.getcwd())
-sys.path.append(ROOT_DIRECTORY)
 
 from environment_agent_modules import (
     SwarmAgent,
@@ -12,7 +7,6 @@ from environment_agent_modules import (
     Turn,
     ObjectType,
     RelativePosition,
-    RelativeMotion,
     create_nonclustered_tile_grid,
 )
 
