@@ -1,6 +1,11 @@
 import argparse
-import os
 import json
+import time
+import os
+from typing import Callable
+from constants import EXPERIMENT_DATA_ROOT_DIRECTORY
+from testing_and_training_modules import file_handler
+from experiment_modules_map import experiment_modules_map
 
 parser = argparse.ArgumentParser(description="Experiment hyperparameters & settings")
 
@@ -58,43 +63,58 @@ parser.add_argument(
     ),
 )
 parser.add_argument(
+    "--num_steps",
+    type=int,
+    default=100,
+    help=("Number of steps per episode (default=10,000)"),
+)
+parser.add_argument(
     "--num_episodes",
     type=int,
     default=100,
-    help=("Number of training episodes with 10,000 steps per episode (default=100) "),
+    help=(
+        "Number of training episodes with "
+        "n steps (num_steps) per episode (default=100) "
+        "Note that the environment resets every episode"
+    ),
+)
+parser.add_argument(
+    "--data_directory_name",
+    type=str,
+    help=("The data directory name for the current experiment"),
+)
+parser.add_argument(
+    "--training_testing_module_name",
+    type=str,
+    help=(
+        "Name for type of experiment to conduct based on the"
+        "experiments developed in the training and testing module"
+    ),
 )
 args = parser.parse_args()
 
-current_experiment_data_directory = (
-    f"{ROOT_EXPERIMENT_DATA_DIRECTORY}/{args.data_folder_name}"
-)
-initial_predictions_images_directory = (
-    f"{current_experiment_data_directory}/initial_predictions"
-)
-final_patches_directory = f"{current_experiment_data_directory}/patches_adv"
-final_predictions_images_directory = (
-    f"{current_experiment_data_directory}/final_predictions"
-)
-final_patched_images_directory = (
-    f"{current_experiment_data_directory}/final_patched_images"
-)
-training_data_directory = f"{current_experiment_data_directory}/training_data"
-training_loss_printouts_directory = (
-    f"{current_experiment_data_directory}/training_loss_printouts"
-)
-loss_plots_directory = f"{current_experiment_data_directory}/loss_plots_directory"
+current_time = time.asctime().strip().replace(" ", "_")
 
-os.mkdir(current_experiment_data_directory)
-os.mkdir(initial_predictions_images_directory)
-os.mkdir(final_patches_directory)
-os.mkdir(final_predictions_images_directory)
-os.mkdir(final_patched_images_directory)
-os.mkdir(training_data_directory)
-os.mkdir(training_loss_printouts_directory)
-os.mkdir(loss_plots_directory)
+current_experiment_data_directory = (
+    f"{EXPERIMENT_DATA_ROOT_DIRECTORY}/{args.data_directory_name}_{current_time}"
+)
+
+if not os.path.exists(current_experiment_data_directory):
+    os.makedirs(current_experiment_data_directory)
 
 file_handler(
-    path=f"{current_experiment_data_directory}/hyperparameters.txt",
+    path=(
+        f"{current_experiment_data_directory}/experiment_hyperparameters_settings.txt"
+    ),
     mode="w",
     func=lambda f: f.write(json.dumps(vars(args), indent=4)),
 )
+
+
+def main(args: argparse.Namespace):
+    func = experiment_modules_map[args.training_testing_module_name]
+    func(args, data_directory=current_experiment_data_directory)
+
+
+if __name__ == "__main__":
+    main(args=args)
