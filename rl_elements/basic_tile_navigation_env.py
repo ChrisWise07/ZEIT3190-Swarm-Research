@@ -1,12 +1,18 @@
+import os
+import sys
 import numpy as np
 import gym
 from gym import spaces
+
+ROOT_DIRECTORY = os.path.dirname(os.getcwd())
+sys.path.append(ROOT_DIRECTORY)
+
 from environment_agent_modules import create_nonclustered_tile_grid, SwarmAgent
 
 
-class TiledEnvForNavigation(gym.Env):
+class BasicTileNavigationEnv(gym.Env):
     def __init__(self):
-        super(TiledEnvForNavigation, self).__init__()
+        super(BasicTileNavigationEnv, self).__init__()
         self.action_space = spaces.Discrete(3)
         self.observation_space = spaces.Box(low=0, high=3, shape=(2,), dtype=int)
 

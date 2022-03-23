@@ -1,9 +1,9 @@
 from stable_baselines3 import PPO
 import os
-from basic_tiled_environment import TiledEnvForNavigation
+from basic_tile_navigation_env import BasicTileNavigationEnv
 import time
 
-current_time = time.asctime().strip().replace(" ", "")
+current_time = time.asctime().strip().replace(" ", "_")
 
 models_dir = f"models/{current_time}/"
 logdir = f"logs/{current_time}/"
@@ -14,7 +14,7 @@ if not os.path.exists(models_dir):
 if not os.path.exists(logdir):
     os.makedirs(logdir)
 
-env = TiledEnvForNavigation()
+env = BasicTileNavigationEnv()
 env.reset()
 
 model = PPO("MlpPolicy", env, verbose=1, tensorboard_log=logdir)
