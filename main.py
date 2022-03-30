@@ -1,9 +1,8 @@
 import argparse
 import json
 import time
-import os
-from constants import EXPERIMENT_DATA_ROOT_DIRECTORY
-from testing_and_training_modules import file_handler
+from helper_files import EXPERIMENT_DATA_ROOT_DIRECTORY
+from helper_files import file_handler
 from experiment_modules_map import experiment_modules_map
 
 parser = argparse.ArgumentParser(description="Experiment hyperparameters & settings")
@@ -64,13 +63,13 @@ parser.add_argument(
 parser.add_argument(
     "--num_steps",
     type=int,
-    default=100,
+    default=1000,
     help=("Number of steps per episode (default=10,000)"),
 )
 parser.add_argument(
     "--num_episodes",
     type=int,
-    default=100,
+    default=10,
     help=(
         "Number of training episodes with "
         "n steps (num_steps) per episode (default=100) "
@@ -78,7 +77,7 @@ parser.add_argument(
     ),
 )
 parser.add_argument(
-    "--data_directory_name",
+    "--experiment_name",
     type=str,
     help=("The data directory name for the current experiment"),
 )
@@ -94,16 +93,11 @@ args = parser.parse_args()
 
 current_time = time.asctime().strip().replace(" ", "_")
 
-current_experiment_data_directory = (
-    f"{EXPERIMENT_DATA_ROOT_DIRECTORY}/{args.data_directory_name}_{current_time}"
-)
-
-if not os.path.exists(current_experiment_data_directory):
-    os.makedirs(current_experiment_data_directory)
+args.experiment_name = f"{args.experiment_name}_{current_time}"
 
 file_handler(
     path=(
-        f"{current_experiment_data_directory}/experiment_hyperparameters_settings.txt"
+        f"{EXPERIMENT_DATA_ROOT_DIRECTORY}/settings/{args.experiment_name}/experiment_hyperparameters_settings.txt"
     ),
     mode="w",
     func=lambda f: f.write(json.dumps(vars(args), indent=4)),
@@ -111,8 +105,7 @@ file_handler(
 
 
 def main(args: argparse.Namespace) -> None:
-    func = experiment_modules_map[args.training_testing_module_name]
-    func(args, data_directory=current_experiment_data_directory)
+    experiment_modules_map[args.training_testing_module_name](args)
 
 
 if __name__ == "__main__":

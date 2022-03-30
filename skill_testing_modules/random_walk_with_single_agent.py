@@ -3,7 +3,7 @@ import json
 import argparse
 from random import choice
 from environment_agent_modules import create_nonclustered_tile_grid, SwarmAgent
-from .utils import return_statistical_analysis_data, file_handler
+from helper_files import return_statistical_analysis_data, file_handler
 
 
 def perform_random_walk_and_record_num_cells_visited(
@@ -33,7 +33,7 @@ def perform_random_walk_and_record_num_cells_visited(
     return num_of_unique_cells_visited
 
 
-def baseline_random_walk_with_single_agent(
+def test_random_walk_with_single_agent(
     args: argparse.Namespace, data_directory: str
 ) -> None:
     num_of_unique_cells_visited = perform_random_walk_and_record_num_cells_visited(

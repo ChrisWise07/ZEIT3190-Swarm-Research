@@ -1,1 +1,0 @@
-EXPERIMENT_DATA_ROOT_DIRECTORY = "experiment_data"

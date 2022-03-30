@@ -1,7 +1,7 @@
 from stable_baselines3.common.env_checker import check_env
-from basic_tile_navigation_env import BasicTileNavigationEnv
+from .single_agent_navigation_trainer_env import SingleAgentNavigationTrainer
 
-env = BasicTileNavigationEnv()
+env = SingleAgentNavigationTrainer()
 check_env(env)
 
 episodes = 2
