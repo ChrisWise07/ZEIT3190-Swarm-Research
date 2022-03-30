@@ -1,7 +1,8 @@
 import argparse
 import json
+import os
 import time
-from helper_files import EXPERIMENT_DATA_ROOT_DIRECTORY
+from helper_files import SETTINGS_DIRECTORY, STATISTICS_DIRECTORY
 from helper_files import file_handler
 from experiment_modules_map import experiment_modules_map
 
@@ -61,19 +62,21 @@ parser.add_argument(
     ),
 )
 parser.add_argument(
-    "--num_steps",
+    "--max_num_steps",
     type=int,
-    default=1000,
-    help=("Number of steps per episode (default=10,000)"),
+    default=None,
+    help=(
+        "Maximum number of steps per episode. "
+        "If None, than 1.5 * optimal step number is used (default=None)"
+    ),
 )
 parser.add_argument(
     "--num_episodes",
     type=int,
-    default=10,
+    default=100,
     help=(
-        "Number of training episodes with "
-        "n steps (num_steps) per episode (default=100) "
-        "Note that the environment resets every episode"
+        "Number of training episodes. "
+        "Note that the environment resets every episode (default=100)"
     ),
 )
 parser.add_argument(
@@ -95,9 +98,15 @@ current_time = time.asctime().strip().replace(" ", "_")
 
 args.experiment_name = f"{args.experiment_name}_{current_time}"
 
+if not os.path.exists(f"{SETTINGS_DIRECTORY}/{args.experiment_name}"):
+    os.makedirs(f"{SETTINGS_DIRECTORY}/{args.experiment_name}")
+
+if not os.path.exists(f"{STATISTICS_DIRECTORY}/{args.experiment_name}"):
+    os.makedirs(f"{STATISTICS_DIRECTORY}/{args.experiment_name}")
+
 file_handler(
     path=(
-        f"{EXPERIMENT_DATA_ROOT_DIRECTORY}/settings/{args.experiment_name}/experiment_hyperparameters_settings.txt"
+        f"{SETTINGS_DIRECTORY}/{args.experiment_name}/experiment_hyperparameters_settings.txt"
     ),
     mode="w",
     func=lambda f: f.write(json.dumps(vars(args), indent=4)),

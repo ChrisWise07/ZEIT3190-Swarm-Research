@@ -11,11 +11,12 @@ from environment_agent_modules import create_nonclustered_tile_grid, SwarmAgent
 
 
 class SingleAgentNavigationTrainer(gym.Env):
-    def __init__(self, max_steps_num: int):
+    def __init__(self, max_steps_num: int, width: int, height: int):
         super(SingleAgentNavigationTrainer, self).__init__()
         self.action_space = spaces.Discrete(3)
         self.observation_space = spaces.Box(low=0, high=3, shape=(2,), dtype=int)
-        self.max_steps = 100
+        self.max_num_steps = max_steps_num
+        self.width, self.height = width, height
 
     def step(self, action):
         self.num_steps += 1
@@ -24,11 +25,9 @@ class SingleAgentNavigationTrainer(gym.Env):
             action=action, tile_grid=self.tile_grid
         )
 
-        if len(self.swarm_agent.cells_visited) == (
-            self.tile_grid.shape[0] * self.tile_grid.shape[1]
-        ):
+        if len(self.swarm_agent.cells_visited) == (self.tile_grid.size):
             self.done = True
-        if self.num_steps == self.max_steps:
+        if self.num_steps == self.max_num_steps:
             self.done = True
 
         return (
@@ -41,9 +40,8 @@ class SingleAgentNavigationTrainer(gym.Env):
     def reset(self):
         self.done = False
         self.num_steps = 0
-        self.tile_grid = create_nonclustered_tile_grid(width=5, height=5)
-        self.swarm_agent = SwarmAgent(id=1, starting_cell=(self.tile_grid[(0, 0)]))
-        self.observation = np.array(
-            self.swarm_agent.get_navigation_states(self.tile_grid)
+        self.tile_grid = create_nonclustered_tile_grid(
+            width=self.width, height=self.height
         )
-        return self.observation
+        self.swarm_agent = SwarmAgent(id=1, starting_cell=(self.tile_grid[(0, 0)]))
+        return np.array(self.swarm_agent.get_navigation_states(self.tile_grid))
