@@ -87,7 +87,6 @@ def draw_swarm_agent_on_tile_grid(
 
 def move_and_show_window(winname: str, img: np.ndarray, x: int, y: int):
     cv2.namedWindow(winname)
-    cv2.moveWindow(winname, x, y)
     cv2.imshow(winname, img)
     cv2.waitKey(0)
 
