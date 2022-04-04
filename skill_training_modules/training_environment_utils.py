@@ -1,15 +1,9 @@
-def calculate_optimal_number_of_steps_needed(
-    tiled_environment_width: int,
-    tiled_environment_height: int,
-) -> int:
-    """
-    Calculates the optimal number of steps needed to complete the task.
-    """
+from stable_baselines3.common.monitor import Monitor
+from stable_baselines3.common.vec_env import DummyVecEnv
 
-    return int(
-        (
-            (tiled_environment_height * tiled_environment_width)
-            - 2
-            + (2 * tiled_environment_width)
-        )
-    )
+
+def return_vectorised_monitored_environment(base_environment: any):
+    """
+    This function returns a monitored and vectorised environment
+    """
+    return DummyVecEnv([lambda: Monitor(base_environment)])

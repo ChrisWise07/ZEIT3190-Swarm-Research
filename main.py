@@ -1,9 +1,5 @@
 import argparse
-import json
-import os
-import time
-from helper_files import SETTINGS_DIRECTORY, STATISTICS_DIRECTORY
-from helper_files import file_handler
+from helper_files import calculate_optimal_number_of_steps_needed
 from experiment_modules_map import experiment_modules_map
 
 parser = argparse.ArgumentParser(description="Experiment hyperparameters & settings")
@@ -67,7 +63,17 @@ parser.add_argument(
     default=None,
     help=(
         "Maximum number of steps per episode. "
-        "If None, than 1.5 * optimal step number is used (default=None)"
+        "If None, than optimal_step_multiplier "
+        "* optimal step number is used (default=None)"
+    ),
+)
+parser.add_argument(
+    "--optimal_step_multiplier",
+    type=float,
+    default=1.5,
+    help=(
+        "Amount to multiply the optimal step number when "
+        "setting the max numnber of steps per episode (default=1.5)"
     ),
 )
 parser.add_argument(
@@ -92,25 +98,17 @@ parser.add_argument(
         "experiments developed in the training and testing module"
     ),
 )
+
 args = parser.parse_args()
 
-current_time = time.asctime().strip().replace(" ", "_")
-
-args.experiment_name = f"{args.experiment_name}_{current_time}"
-
-if not os.path.exists(f"{SETTINGS_DIRECTORY}/{args.experiment_name}"):
-    os.makedirs(f"{SETTINGS_DIRECTORY}/{args.experiment_name}")
-
-if not os.path.exists(f"{STATISTICS_DIRECTORY}/{args.experiment_name}"):
-    os.makedirs(f"{STATISTICS_DIRECTORY}/{args.experiment_name}")
-
-file_handler(
-    path=(
-        f"{SETTINGS_DIRECTORY}/{args.experiment_name}/experiment_hyperparameters_settings.txt"
-    ),
-    mode="w",
-    func=lambda f: f.write(json.dumps(vars(args), indent=4)),
-)
+if not (args.max_num_steps):
+    args.max_num_steps = (
+        args.optimal_step_multiplier
+        * calculate_optimal_number_of_steps_needed(
+            tiled_environment_width=args.tiled_environment_width,
+            tiled_environment_height=args.tiled_environment_height,
+        )
+    )
 
 
 def main(args: argparse.Namespace) -> None:

@@ -3,6 +3,7 @@ import sys
 import numpy as np
 import gym
 from gym import spaces
+import wandb
 
 ROOT_DIRECTORY = os.path.dirname(os.getcwd())
 sys.path.append(ROOT_DIRECTORY)
@@ -25,10 +26,12 @@ class SingleAgentNavigationTrainer(gym.Env):
             action=action, tile_grid=self.tile_grid
         )
 
-        if len(self.swarm_agent.cells_visited) == (self.tile_grid.size):
+        if (
+            len(self.swarm_agent.cells_visited) == (self.tile_grid.size)
+            or self.num_steps == self.max_num_steps
+        ):
             self.done = True
-        if self.num_steps == self.max_num_steps:
-            self.done = True
+            wandb.log({"num_of_cells_visited": len(self.swarm_agent.cells_visited)})
 
         return (
             np.array(self.swarm_agent.get_navigation_states(self.tile_grid)),
