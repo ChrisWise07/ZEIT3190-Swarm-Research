@@ -1,6 +1,7 @@
 import argparse
 from helper_files import calculate_optimal_number_of_steps_needed
 from experiment_modules_map import experiment_modules_map
+from skill_training_modules import train_skill_with_environment
 
 parser = argparse.ArgumentParser(description="Experiment hyperparameters & settings")
 
@@ -20,13 +21,13 @@ parser.add_argument(
     ),
 )
 parser.add_argument(
-    "--tiled_environment_height",
+    "--height",
     type=int,
     default=20,
     help="The height of the tiled environment i.e. the number of rows (default=20)",
 )
 parser.add_argument(
-    "--tiled_environment_width",
+    "--width",
     type=int,
     default=20,
     help="The width of the tiled environment i.e. the number of columns (default=20)",
@@ -70,7 +71,7 @@ parser.add_argument(
 parser.add_argument(
     "--optimal_step_multiplier",
     type=float,
-    default=1.5,
+    default=4.0,
     help=(
         "Amount to multiply the optimal step number when "
         "setting the max numnber of steps per episode (default=1.5)"
@@ -91,12 +92,22 @@ parser.add_argument(
     help=("The data directory name for the current experiment"),
 )
 parser.add_argument(
-    "--training_testing_module_name",
+    "--testing_module_name",
     type=str,
-    help=(
-        "Name for type of experiment to conduct based on the"
-        "experiments developed in the training and testing module"
-    ),
+    default=None,
+    help=("The name of the testing module to use (default=None)."),
+)
+parser.add_argument(
+    "--training_environment",
+    type=str,
+    default=None,
+    help=("The name of the training environment to use (default=None)."),
+)
+parser.add_argument(
+    "--offline",
+    type=bool,
+    default=False,
+    help=("Controls if wandb is ran offline (default=False)"),
 )
 
 args = parser.parse_args()
@@ -105,14 +116,18 @@ if not (args.max_num_steps):
     args.max_num_steps = (
         args.optimal_step_multiplier
         * calculate_optimal_number_of_steps_needed(
-            tiled_environment_width=args.tiled_environment_width,
-            tiled_environment_height=args.tiled_environment_height,
+            tiled_environment_width=args.width,
+            tiled_environment_height=args.height,
         )
     )
 
 
 def main(args: argparse.Namespace) -> None:
-    experiment_modules_map[args.training_testing_module_name](args)
+    if args.training_environment:
+        args.training_environment = experiment_modules_map[args.training_environment]
+        train_skill_with_environment(args=args)
+    else:
+        experiment_modules_map[args.training_testing_module_name](args)
 
 
 if __name__ == "__main__":

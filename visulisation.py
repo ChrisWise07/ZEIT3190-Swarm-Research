@@ -1,6 +1,7 @@
 from typing import Tuple
 import cv2
 import numpy as np
+import tkinter as tk
 from random import choice
 from environment_agent_modules import (
     create_nonclustered_tile_grid,
@@ -10,12 +11,17 @@ from environment_agent_modules import (
 
 TILE_SIZE = 25
 MID_POINT_OFFSET = round(TILE_SIZE / 2)
+root = tk.Tk()
+SCREEN_MID_POINT = (
+    round(root.winfo_screenwidth() / 4),
+    round(root.winfo_screenheight() / 2),
+)
 
 
 def setup_tile_grid_for_display(tile_grid: np.ndarray) -> np.ndarray:
     display_grid = np.zeros(
         (
-            (tile_grid.shape[0] * TILE_SIZE) + TILE_SIZE,
+            tile_grid.shape[0] * TILE_SIZE,
             tile_grid.shape[1] * TILE_SIZE,
             3,
         ),
@@ -33,9 +39,6 @@ def setup_tile_grid_for_display(tile_grid: np.ndarray) -> np.ndarray:
                     255,
                     255,
                 )
-    display_grid[
-        tile_grid.shape[0] * TILE_SIZE : tile_grid.shape[0] * TILE_SIZE + TILE_SIZE,
-    ] = (245, 135, 66)
 
     return display_grid
 
@@ -85,43 +88,30 @@ def draw_swarm_agent_on_tile_grid(
     )
 
 
-def move_and_show_window(winname: str, img: np.ndarray, x: int, y: int):
+def move_and_show_window(x: int, y: int, winname: str, img: np.ndarray) -> None:
     cv2.namedWindow(winname)
+    cv2.moveWindow(winname, x, y)
     cv2.imshow(winname, img)
-    cv2.waitKey(0)
+    cv2.waitKey(400)
 
 
 def main() -> None:
     tile_grid = create_nonclustered_tile_grid(20, 20)
-    swarm_agent = SwarmAgent(id=1, starting_cell=tile_grid[19, 19])
+    swarm_agents = [SwarmAgent(id=i, starting_cell=tile_grid[i, i]) for i in range(1)]
 
-    for i in range(10):
-        img = draw_swarm_agent_on_tile_grid(
-            display_tile_grid=setup_tile_grid_for_display(tile_grid),
-            swarm_agent=swarm_agent,
-        )
+    display_location = (
+        round(SCREEN_MID_POINT[0] - (tile_grid.shape[1] * TILE_SIZE / 4)),
+        round(SCREEN_MID_POINT[1] - (tile_grid.shape[0] * TILE_SIZE / 8)),
+    )
 
-        obv, reward = (
-            np.array(swarm_agent.get_navigation_states(tile_grid)),
-            swarm_agent.return_navigation_reward(),
-        )
+    for i in range(100):
+        img = setup_tile_grid_for_display(tile_grid)
 
-        cv2.putText(
-            img,
-            f"Observation is {obv} and reward is {reward}",
-            (0, img.shape[0] - round(MID_POINT_OFFSET / 2)),
-            cv2.FONT_HERSHEY_SIMPLEX,
-            0.7,
-            (0, 255, 0),
-            1,
-            cv2.LINE_AA,
-        )
+        for agent in swarm_agents:
+            agent.navigate(tile_grid=tile_grid)
+            draw_swarm_agent_on_tile_grid(img, agent)
 
-        move_and_show_window(winname="Tile Grid", img=img, x=600, y=200)
-
-        swarm_agent.perform_navigation_action(
-            action=choice(range(0, 3)), tile_grid=tile_grid
-        )
+        move_and_show_window(*display_location, winname="Tile Grid", img=img)
 
     cv2.destroyAllWindows()
 

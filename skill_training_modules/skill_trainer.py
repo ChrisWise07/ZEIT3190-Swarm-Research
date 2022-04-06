@@ -1,22 +1,27 @@
 import argparse
 import wandb
+import os
 from stable_baselines3 import DQN
 from wandb.integration.sb3 import WandbCallback
-from .skill_training_environments import SingleAgentNavigationTrainer
-from .training_environment_utils import return_vectorised_monitored_environment
+from stable_baselines3.common.monitor import Monitor
+from stable_baselines3.common.vec_env import DummyVecEnv
 from helper_files import (
     MODELS_DIRECTORY,
     LOGS_DIRECTORY,
 )
 
 
-def train_navigation_skill_with_single_agent(args: argparse.Namespace) -> None:
+def train_skill_with_environment(args: argparse.Namespace) -> None:
+    if args.offline:
+        os.environ["WANDB_API_KEY"] = "dcda94c92ef247d730cd5188cd920b5a5002aa1d"
+        os.environ["WANDB_MODE"] = "offline"
+
     config = vars(args)
 
     config.update(
         {
             "policy_type": "MlpPolicy",
-            "env_name": "SingleAgentNavigationTrainer",
+            "env_name": f"{args.training_environment.__name__}",
         }
     )
 
@@ -29,13 +34,7 @@ def train_navigation_skill_with_single_agent(args: argparse.Namespace) -> None:
         sync_tensorboard=True,
     )
 
-    env = return_vectorised_monitored_environment(
-        base_environment=SingleAgentNavigationTrainer(
-            max_steps_num=args.max_num_steps,
-            width=args.tiled_environment_width,
-            height=args.tiled_environment_height,
-        )
-    )
+    env = DummyVecEnv([lambda: Monitor(args.training_environment(**config))])
 
     model = DQN(
         policy=config["policy_type"],

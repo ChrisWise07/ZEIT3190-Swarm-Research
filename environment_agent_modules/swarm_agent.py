@@ -4,6 +4,7 @@ from dataclasses import dataclass, field, InitVar
 from typing import Any, Dict, List, Tuple, Set
 from .tile_properties import WallType
 from .utils import validate_cell
+from stable_baselines3 import DQN
 from .swarm_agent_enums import (
     Direction,
     Turn,
@@ -17,6 +18,7 @@ class SwarmAgent:
     id: int
     starting_cell: InitVar[Dict[str, Any]]
     current_direction_facing: int = Direction.RIGHT.value
+    navigation_model = DQN.load("trained_models/navigation_model.zip")
     current_cell: Tuple[int, int] = field(init=False)
     current_opinion: float = field(init=False)
     calculated_collective_opinion: float = field(init=False)
@@ -108,4 +110,15 @@ class SwarmAgent:
             0: lambda self, tile_grid: (self.forward_step(tile_grid=tile_grid)),
             1: lambda self, _: self.turn(turn_type=Turn.LEFT.value),
             2: lambda self, _: self.turn(turn_type=Turn.RIGHT.value),
-        }[action](self, tile_grid)
+        }[int(action)](self, tile_grid)
+
+    def choose_navigation_action(self, tile_grid: np.ndarray) -> int:
+        return self.navigation_model.predict(
+            np.array(self.get_navigation_states(tile_grid=tile_grid))
+        )[0]
+
+    def navigate(self, tile_grid: np.ndarray) -> None:
+        self.perform_navigation_action(
+            action=self.choose_navigation_action(tile_grid=tile_grid),
+            tile_grid=tile_grid,
+        )
