@@ -16,17 +16,15 @@ class SingleAgentNavigationTrainer(gym.Env):
     def __init__(self, max_num_steps: int, width: int, height: int, **kwargs):
         super(SingleAgentNavigationTrainer, self).__init__()
         self.action_space = spaces.Discrete(3)
-        self.observation_space = spaces.Box(low=0, high=3, shape=(2,), dtype=int)
+        self.observation_space = spaces.Box(low=0, high=4, shape=(2,), dtype=int)
         self.max_num_steps = max_num_steps
         self.width, self.height = width, height
 
     def step(self, action):
         self.num_steps += 1
-
         self.swarm_agent.perform_navigation_action(
             action=action, tile_grid=self.tile_grid
         )
-
         if (
             len(self.swarm_agent.cells_visited) == (self.tile_grid.size)
             or self.num_steps == self.max_num_steps
@@ -57,5 +55,6 @@ class SingleAgentNavigationTrainer(gym.Env):
                     )
                 ]
             ),
+            current_direction_facing=random.randint(0, 3),
         )
         return np.array(self.swarm_agent.get_navigation_states(self.tile_grid))

@@ -16,7 +16,9 @@ class Turn(fastenum.Enum):
 class RelativePosition(fastenum.Enum):
     FRONT = 0
     LEFT = 1
+    LEFT_FRONT = 2
     RIGHT = 3
+    RIGHT_FRONT = 4
 
 
 class ObjectType(fastenum.Enum):

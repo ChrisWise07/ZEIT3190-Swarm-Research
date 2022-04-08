@@ -82,12 +82,12 @@ class swarm_agent_tester(unittest.TestCase):
             "postive reward not returning correctly",
         )
 
-    def test_current_cell_in_visited_cell_return_reward_of_0(self):
+    def test_current_cell_in_visited_cell_return_reward_of_neg_1(self):
         self.swarm_agent.leave_cell(self.tiled_enviro[(0, 0)])
         self.swarm_agent.occupy_cell(self.tiled_enviro[(0, 0)])
         self.assertEqual(
             self.swarm_agent.return_navigation_reward(),
-            0,
+            -1,
             "zero reward not returning correctly",
         )
 
@@ -204,7 +204,7 @@ class swarm_agent_tester(unittest.TestCase):
             )
             self.assertEqual(
                 self.swarm_agent.return_navigation_reward(),
-                0,
+                -1,
                 "correct reward not returning after unsuccesful step forward",
             )
             if pre_occupied_cell:
@@ -350,7 +350,7 @@ class swarm_agent_tester(unittest.TestCase):
         self.state_tester(
             correct_navigation_states=[
                 ObjectType.CORNER,
-                RelativePosition.FRONT,
+                RelativePosition.LEFT_FRONT,
             ],
             obj_description="top left corner",
             agent_direction=Direction.UP,
@@ -379,7 +379,7 @@ class swarm_agent_tester(unittest.TestCase):
         self.state_tester(
             correct_navigation_states=[
                 ObjectType.CORNER,
-                RelativePosition.FRONT,
+                RelativePosition.RIGHT_FRONT,
             ],
             obj_description="top left corner",
             agent_direction=Direction.LEFT,
@@ -422,7 +422,7 @@ class swarm_agent_tester(unittest.TestCase):
         self.state_tester(
             correct_navigation_states=[
                 ObjectType.CORNER,
-                RelativePosition.FRONT,
+                RelativePosition.RIGHT_FRONT,
             ],
             obj_description="right wall",
             agent_direction=Direction.UP,
@@ -507,7 +507,7 @@ class swarm_agent_tester(unittest.TestCase):
         self.state_tester(
             correct_navigation_states=[
                 ObjectType.CORNER,
-                RelativePosition.FRONT,
+                RelativePosition.LEFT_FRONT,
             ],
             obj_description="top left corner",
             agent_direction=Direction.UP,
@@ -535,7 +535,7 @@ class swarm_agent_tester(unittest.TestCase):
         self.state_tester(
             correct_navigation_states=[
                 ObjectType.CORNER,
-                RelativePosition.FRONT,
+                RelativePosition.RIGHT_FRONT,
             ],
             obj_description="top left corner",
             agent_direction=Direction.LEFT,

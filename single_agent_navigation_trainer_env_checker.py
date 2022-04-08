@@ -1,7 +1,7 @@
 from stable_baselines3.common.env_checker import check_env
-from .single_agent_navigation_trainer_env import SingleAgentNavigationTrainer
+from skill_training_modules import SingleAgentNavigationTrainer
 
-env = SingleAgentNavigationTrainer()
+env = SingleAgentNavigationTrainer(max_num_steps=40, width=5, height=5)
 check_env(env)
 
 episodes = 2

@@ -92,12 +92,15 @@ def move_and_show_window(x: int, y: int, winname: str, img: np.ndarray) -> None:
     cv2.namedWindow(winname)
     cv2.moveWindow(winname, x, y)
     cv2.imshow(winname, img)
-    cv2.waitKey(400)
+    cv2.waitKey(500)
 
 
 def main() -> None:
     tile_grid = create_nonclustered_tile_grid(20, 20)
-    swarm_agents = [SwarmAgent(id=i, starting_cell=tile_grid[i, i]) for i in range(1)]
+    swarm_agents = [
+        SwarmAgent(id=i, starting_cell=tile_grid[i, i], needs_models_loaded=True)
+        for i in range(10)
+    ]
 
     display_location = (
         round(SCREEN_MID_POINT[0] - (tile_grid.shape[1] * TILE_SIZE / 4)),

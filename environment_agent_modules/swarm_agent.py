@@ -4,7 +4,7 @@ from dataclasses import dataclass, field, InitVar
 from typing import Any, Dict, List, Tuple, Set
 from .tile_properties import WallType
 from .utils import validate_cell
-from stable_baselines3 import DQN
+from helper_files import TRAINED_MODELS_DIRECTORY
 from .swarm_agent_enums import (
     Direction,
     Turn,
@@ -17,15 +17,25 @@ from .swarm_agent_enums import (
 class SwarmAgent:
     id: int
     starting_cell: InitVar[Dict[str, Any]]
+    needs_models_loaded: InitVar[bool] = False
     current_direction_facing: int = Direction.RIGHT.value
-    navigation_model = DQN.load("trained_models/navigation_model.zip")
+    navigation_model = None
     current_cell: Tuple[int, int] = field(init=False)
     current_opinion: float = field(init=False)
     calculated_collective_opinion: float = field(init=False)
     cells_visited: Set[Tuple[int, int]] = field(init=False)
 
-    def __post_init__(self, starting_cell: Dict[str, Any]) -> None:
+    def __post_init__(
+        self, starting_cell: Dict[str, Any], needs_models_loaded: bool
+    ) -> None:
         self.cells_visited = set()
+        if needs_models_loaded:
+            from stable_baselines3 import DQN
+
+            self.navigation_model = DQN.load(
+                f"{TRAINED_MODELS_DIRECTORY}/navigation_model"
+            )
+
         if not (self.occupy_cell(starting_cell)):
             self.current_cell = (None, None)
 
@@ -45,7 +55,9 @@ class SwarmAgent:
         self.add_cell_to_visited_list(tile["id"])
 
     def return_navigation_reward(self) -> int:
-        return int(not (self.current_cell in self.cells_visited))
+        if self.current_cell in self.cells_visited:
+            return -1 / len(self.cells_visited)
+        return len(self.cells_visited)
 
     def __return_next_cell_coordinate(self) -> Tuple[int, int]:
         return {
@@ -69,16 +81,25 @@ class SwarmAgent:
 
     def __call_each_state_function_for_tile(
         self, tile_walls: List[WallType]
-    ) -> Tuple[int, int, int]:
+    ) -> Tuple[int, int]:
         return {
             0: lambda _: (ObjectType.NONE.value, RelativePosition.FRONT.value),
             1: lambda tile_walls: (
                 ObjectType.WALL.value,
                 (self.current_direction_facing - tile_walls[0]) % 4,
             ),
-            2: lambda _: (
+            2: lambda tile_walls: (
                 ObjectType.CORNER.value,
-                RelativePosition.FRONT.value,
+                (
+                    self.current_direction_facing
+                    - [
+                        wall
+                        for wall in tile_walls
+                        if ((self.current_direction_facing - wall) % 4 in [1, 3])
+                    ][0]
+                )
+                % 4
+                + 1,
             ),
         }[len(tile_walls)](tile_walls)
 
@@ -103,19 +124,24 @@ class SwarmAgent:
             tile_walls=tile_grid[self.current_cell]["walls"]
         )
 
-    def perform_navigation_action(self, action: int, tile_grid: np.ndarray) -> None:
+    def perform_navigation_action(
+        self, action: np.ndarray, tile_grid: np.ndarray
+    ) -> None:
         self.add_cell_to_visited_list(self.current_cell)
+
+        if isinstance(action, (np.ndarray)):
+            action = action[0]
 
         return {
             0: lambda self, tile_grid: (self.forward_step(tile_grid=tile_grid)),
             1: lambda self, _: self.turn(turn_type=Turn.LEFT.value),
             2: lambda self, _: self.turn(turn_type=Turn.RIGHT.value),
-        }[int(action)](self, tile_grid)
+        }[action](self, tile_grid)
 
     def choose_navigation_action(self, tile_grid: np.ndarray) -> int:
-        return self.navigation_model.predict(
-            np.array(self.get_navigation_states(tile_grid=tile_grid))
-        )[0]
+        state = self.get_navigation_states(tile_grid=tile_grid)
+        prediction = self.navigation_model.predict(np.array([state]))
+        return prediction[0].item()
 
     def navigate(self, tile_grid: np.ndarray) -> None:
         self.perform_navigation_action(
