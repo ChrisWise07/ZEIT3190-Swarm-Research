@@ -23,19 +23,19 @@ parser.add_argument(
 parser.add_argument(
     "--height",
     type=int,
-    default=20,
+    default=25,
     help="The height of the tiled environment i.e. the number of rows (default=20)",
 )
 parser.add_argument(
     "--width",
     type=int,
-    default=20,
+    default=25,
     help="The width of the tiled environment i.e. the number of columns (default=20)",
 )
 parser.add_argument(
     "--num_of_swarm_agents",
     type=int,
-    default=20,
+    default=12,
     help="The number of swarm agents (default=20)",
 )
 parser.add_argument(
@@ -51,8 +51,8 @@ parser.add_argument(
 )
 parser.add_argument(
     "--communication_range",
-    type=float,
-    default=0.025,
+    type=int,
+    default=1,
     help=(
         "Percentage of overall environment over which agents can communicate "
         "their opinions (default=0.025) "
@@ -71,7 +71,7 @@ parser.add_argument(
 parser.add_argument(
     "--optimal_step_multiplier",
     type=float,
-    default=4.0,
+    default=3.0,
     help=(
         "Amount to multiply the optimal step number when "
         "setting the max numnber of steps per episode (default=1.5)"
@@ -108,6 +108,18 @@ parser.add_argument(
     type=bool,
     default=False,
     help=("Controls if wandb is ran offline (default=False)"),
+)
+parser.add_argument(
+    "--previous_model",
+    type=str,
+    default=None,
+    help=("Name of the previous model to load (default=None)."),
+)
+parser.add_argument(
+    "--verbose",
+    type=int,
+    default=1,
+    help=("Controls the verbosity of the output (default=1)"),
 )
 
 args = parser.parse_args()

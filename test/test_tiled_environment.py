@@ -208,9 +208,7 @@ class tiled_environment_tester(unittest.TestCase):
         )
 
         self.assertAlmostEqual(
-            return_ratio_of_white_to_black_tiles(
-                tile_grid=new_tiled_environment, height=15, width=15
-            ),
+            return_ratio_of_white_to_black_tiles(tile_grid=new_tiled_environment),
             0.7,
             places=1,
         )
@@ -327,9 +325,7 @@ class tiled_environment_tester(unittest.TestCase):
         )
 
         self.assertAlmostEqual(
-            return_ratio_of_white_to_black_tiles(
-                tile_grid=new_tiled_environment, height=15, width=15
-            ),
+            return_ratio_of_white_to_black_tiles(tile_grid=new_tiled_environment),
             0.3,
             places=1,
         )
@@ -346,9 +342,7 @@ class tiled_environment_tester(unittest.TestCase):
         )
 
         self.assertAlmostEqual(
-            return_ratio_of_white_to_black_tiles(
-                tile_grid=new_tiled_environment, height=15, width=15
-            ),
+            return_ratio_of_white_to_black_tiles(tile_grid=new_tiled_environment),
             0.25,
             places=1,
         )

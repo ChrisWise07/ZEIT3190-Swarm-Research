@@ -45,8 +45,8 @@ def tile_creator(
     return {
         "colour": colour,
         "walls": walls,
-        "occupied": False,
         "id": (coordinate),
+        "agent": None,
     }
 
 

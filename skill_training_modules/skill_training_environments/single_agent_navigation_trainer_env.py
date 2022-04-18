@@ -46,7 +46,6 @@ class SingleAgentNavigationTrainer(gym.Env):
             width=self.width, height=self.height
         )
         self.swarm_agent = SwarmAgent(
-            id=1,
             starting_cell=(
                 self.tile_grid[
                     (

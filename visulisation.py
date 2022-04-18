@@ -2,7 +2,6 @@ from typing import Tuple
 import cv2
 import numpy as np
 import tkinter as tk
-from random import choice
 from environment_agent_modules import (
     create_nonclustered_tile_grid,
     SwarmAgent,
@@ -92,14 +91,14 @@ def move_and_show_window(x: int, y: int, winname: str, img: np.ndarray) -> None:
     cv2.namedWindow(winname)
     cv2.moveWindow(winname, x, y)
     cv2.imshow(winname, img)
-    cv2.waitKey(500)
+    cv2.waitKey(400)
 
 
 def main() -> None:
     tile_grid = create_nonclustered_tile_grid(20, 20)
     swarm_agents = [
         SwarmAgent(id=i, starting_cell=tile_grid[i, i], needs_models_loaded=True)
-        for i in range(10)
+        for i in range(20)
     ]
 
     display_location = (

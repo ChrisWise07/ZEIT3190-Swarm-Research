@@ -2,8 +2,8 @@ import fastenum
 
 
 class TileColour(fastenum.Enum):
-    WHITE = 0
-    BLACK = 1
+    WHITE = 1
+    BLACK = 0
 
 
 class WallType(fastenum.Enum):

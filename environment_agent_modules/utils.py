@@ -29,9 +29,9 @@ def count_of_tile_colour(tile_grid: ndarray, colour: TileColour):
     )
 
 
-def return_ratio_of_white_to_black_tiles(tile_grid: ndarray, height: int, width: int):
+def return_ratio_of_white_to_black_tiles(tile_grid: ndarray) -> float:
     return count_of_tile_colour(tile_grid=tile_grid, colour=TileColour.WHITE) / (
-        height * width
+        tile_grid.size
     )
 
 

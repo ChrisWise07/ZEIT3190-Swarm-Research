@@ -1,7 +1,10 @@
+from operator import length_hint
 import numpy as np
 
 from dataclasses import dataclass, field, InitVar
-from typing import Any, Dict, List, Tuple, Set
+from typing import Any, Dict, List, Tuple, Set, Union
+
+from urllib3 import Retry
 from .tile_properties import WallType
 from .utils import validate_cell
 from helper_files import TRAINED_MODELS_DIRECTORY
@@ -15,14 +18,17 @@ from .swarm_agent_enums import (
 
 @dataclass(repr=False, eq=False)
 class SwarmAgent:
-    id: int
     starting_cell: InitVar[Dict[str, Any]]
     needs_models_loaded: InitVar[bool] = False
     current_direction_facing: int = Direction.RIGHT.value
     navigation_model = None
+    sensing: bool = True
+    num_of_white_cells_observed: int = 0
+    num_of_cells_observed: int = 0
+    collective_opinion_weight: float = 0.9
+    calculated_collective_opinion: float = 0.5
+    communication_range: int = 1
     current_cell: Tuple[int, int] = field(init=False)
-    current_opinion: float = field(init=False)
-    calculated_collective_opinion: float = field(init=False)
     cells_visited: Set[Tuple[int, int]] = field(init=False)
 
     def __post_init__(
@@ -30,10 +36,10 @@ class SwarmAgent:
     ) -> None:
         self.cells_visited = set()
         if needs_models_loaded:
-            from stable_baselines3 import DQN
+            from stable_baselines3 import PPO
 
-            self.navigation_model = DQN.load(
-                f"{TRAINED_MODELS_DIRECTORY}/navigation_model"
+            self.navigation_model = PPO.load(
+                f"{TRAINED_MODELS_DIRECTORY}/multi_agent_nav_model"
             )
 
         if not (self.occupy_cell(starting_cell)):
@@ -43,15 +49,19 @@ class SwarmAgent:
         self.cells_visited.add(cell_id)
 
     def occupy_cell(self, tile: Dict[str, Any]) -> bool:
-        if not (tile["occupied"]):
-            tile["occupied"] = True
+        if not (tile["agent"]):
+            tile["agent"] = self
             self.current_cell = tile["id"]
+            if self.sensing:
+                self.num_of_cells_observed += 1
+                if tile["colour"]:
+                    self.num_of_white_cells_observed += 1
             return True
 
         return False
 
     def leave_cell(self, tile: Dict) -> None:
-        tile["occupied"] = False
+        tile["agent"] = None
         self.add_cell_to_visited_list(tile["id"])
 
     def return_navigation_reward(self) -> int:
@@ -74,7 +84,7 @@ class SwarmAgent:
         if validate_cell(
             new_cell=new_cell, grid_shape=tile_grid.shape
         ) and self.occupy_cell(tile=tile_grid[new_cell]):
-            tile_grid[old_cell]["occupied"] = False
+            tile_grid[old_cell]["agent"] = None
 
     def turn(self, turn_type: int) -> None:
         self.current_direction_facing = (self.current_direction_facing + turn_type) % 4
@@ -109,7 +119,7 @@ class SwarmAgent:
         if validate_cell(new_cell=next_tile_coordinates, grid_shape=tile_grid.shape):
             next_tile_along = tile_grid[next_tile_coordinates]
             # other agents have precedence when detecting objects on the next tile along
-            if next_tile_along["occupied"]:
+            if next_tile_along["agent"]:
                 return (
                     ObjectType.AGENT.value,
                     RelativePosition.FRONT.value,
@@ -139,12 +149,56 @@ class SwarmAgent:
         }[action](self, tile_grid)
 
     def choose_navigation_action(self, tile_grid: np.ndarray) -> int:
-        state = self.get_navigation_states(tile_grid=tile_grid)
-        prediction = self.navigation_model.predict(np.array([state]))
-        return prediction[0].item()
+        return self.navigation_model.predict(
+            np.array([self.get_navigation_states(tile_grid=tile_grid)])
+        )[0].item()
 
     def navigate(self, tile_grid: np.ndarray) -> None:
         self.perform_navigation_action(
             action=self.choose_navigation_action(tile_grid=tile_grid),
             tile_grid=tile_grid,
+        )
+
+    def calculate_opinion(self) -> int:
+        return round(self.num_of_white_cells_observed / self.num_of_cells_observed)
+
+    def return_opinion(self) -> Union[int, None]:
+        if not (self.sensing):
+            return self.calculate_opinion()
+
+    def update_calculated_collective_opinion(self, opinion: int) -> None:
+        self.calculated_collective_opinion = (
+            self.collective_opinion_weight * self.calculated_collective_opinion
+            + (1 - self.collective_opinion_weight) * opinion
+        )
+
+    def recieve_local_opinions(self, tile_grid: np.ndarray):
+        current_y, current_x = self.current_cell
+        local_area = tile_grid[
+            current_y
+            - self.communication_range : current_y
+            + self.communication_range
+            + 1,
+            current_x
+            - self.communication_range : current_x
+            + self.communication_range
+            + 1,
+        ]
+        for tile in local_area.flat:
+            if tile["agent"] and tile["agent"] != self:
+                recieved_opinion = tile["agent"].return_opinion()
+                if recieved_opinion is not None:
+                    self.update_calculated_collective_opinion(recieved_opinion)
+
+    def return_sense_broadcast_states(self) -> np.ndarray:
+        opinion = self.calculate_opinion()
+
+        return np.array(
+            (
+                self.num_of_cells_observed,
+                opinion,
+                self.calculated_collective_opinion,
+                abs(self.calculated_collective_opinion - opinion),
+            ),
+            dtype=np.float32,
         )

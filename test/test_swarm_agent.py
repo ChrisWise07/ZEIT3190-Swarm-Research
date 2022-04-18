@@ -1,5 +1,5 @@
 import unittest
-from typing import List, Tuple, Union
+from typing import List, Tuple, Union, Dict
 
 from environment_agent_modules import (
     SwarmAgent,
@@ -8,15 +8,21 @@ from environment_agent_modules import (
     ObjectType,
     RelativePosition,
     create_nonclustered_tile_grid,
+    create_clustered_inital_observation_not_useful_tile_grid,
+    create_clustered_inital_observation_useful_tile_grid,
 )
 
 
 class swarm_agent_tester(unittest.TestCase):
     def setUp(self) -> None:
-        self.tiled_enviro = create_nonclustered_tile_grid(
-            height=5, width=5, ratio_of_white_to_black_tiles=0.5
+        self.tiled_enviro = create_nonclustered_tile_grid(height=5, width=5)
+        self.clusted_enviro_obs_useful = (
+            create_clustered_inital_observation_useful_tile_grid(width=5, height=5)
         )
-        self.swarm_agent = SwarmAgent(id=1, starting_cell=self.tiled_enviro[(0, 0)])
+        self.clusted_enviro_obs_not_useful = (
+            create_clustered_inital_observation_not_useful_tile_grid(width=5, height=5)
+        )
+        self.swarm_agent = SwarmAgent(starting_cell=self.tiled_enviro[(0, 0)])
 
     def test_visited_cell_is_visited(self):
         self.assertEqual(
@@ -29,13 +35,13 @@ class swarm_agent_tester(unittest.TestCase):
 
     def test_occupied_cell_returns_is_occupied(self):
         self.assertEqual(
-            self.tiled_enviro[(0, 0)]["occupied"],
-            True,
+            self.tiled_enviro[(0, 0)]["agent"],
+            self.swarm_agent,
             "occupation status not correct",
         )
 
     def test_another_member_visting_cell_cannot_enter_it(self):
-        second_swarm_agent = SwarmAgent(id=2, starting_cell=self.tiled_enviro[(0, 0)])
+        second_swarm_agent = SwarmAgent(starting_cell=self.tiled_enviro[(0, 0)])
         self.assertNotEqual(
             second_swarm_agent.current_cell,
             (0, 0),
@@ -45,18 +51,18 @@ class swarm_agent_tester(unittest.TestCase):
     def test_leaving_cell_makes_it_no_longer_occupied(self):
         self.swarm_agent.leave_cell(self.tiled_enviro[(0, 0)])
         self.assertEqual(
-            self.tiled_enviro[(0, 0)]["occupied"],
-            False,
+            self.tiled_enviro[(0, 0)]["agent"],
+            None,
             "occupation status not correct on leaving",
         )
 
     def test_occupy_leave_cell_allows_other_agent_to_occupy(self):
         self.swarm_agent.leave_cell(self.tiled_enviro[(0, 0)])
-        second_swarm_agent = SwarmAgent(id=2, starting_cell=self.tiled_enviro[(0, 0)])
+        second_swarm_agent = SwarmAgent(starting_cell=self.tiled_enviro[(0, 0)])
         with self.subTest():
             self.assertEqual(
-                self.tiled_enviro[(0, 0)]["occupied"],
-                True,
+                self.tiled_enviro[(0, 0)]["agent"],
+                second_swarm_agent,
                 "occupation status not correct on re-entry",
             )
             self.assertEqual(
@@ -95,9 +101,7 @@ class swarm_agent_tester(unittest.TestCase):
         self, different_starting_cell: Tuple[int, int]
     ) -> SwarmAgent:
         self.swarm_agent.leave_cell(self.tiled_enviro[self.swarm_agent.current_cell])
-        return SwarmAgent(
-            id=1, starting_cell=self.tiled_enviro[different_starting_cell]
-        )
+        return SwarmAgent(starting_cell=self.tiled_enviro[different_starting_cell])
 
     def succesful_forward_step_tester(
         self,
@@ -130,13 +134,13 @@ class swarm_agent_tester(unittest.TestCase):
                 f"cells visited for {agent_direction} facing forward step not working",
             )
             self.assertEqual(
-                self.tiled_enviro[starting_cell]["occupied"],
-                False,
+                self.tiled_enviro[starting_cell]["agent"],
+                None,
                 f"occupation for cell left for {agent_direction} facing forward step not working",
             )
             self.assertEqual(
-                self.tiled_enviro[new_cell]["occupied"],
-                True,
+                self.tiled_enviro[new_cell]["agent"],
+                self.swarm_agent,
                 f"occupation for current cell for {agent_direction} facing forward step not working",
             )
             self.assertEqual(
@@ -198,8 +202,8 @@ class swarm_agent_tester(unittest.TestCase):
                 f"cells visited for {agent_direction} facing forward step not working",
             )
             self.assertEqual(
-                self.tiled_enviro[starting_cell]["occupied"],
-                True,
+                self.tiled_enviro[starting_cell]["agent"],
+                self.swarm_agent,
                 f"occupation for current cell for {agent_direction} facing forward step not working",
             )
             self.assertEqual(
@@ -215,7 +219,7 @@ class swarm_agent_tester(unittest.TestCase):
                 )
 
     def test_step_forward_on_to_occupied_tile(self):
-        SwarmAgent(id=2, starting_cell=self.tiled_enviro[(0, 1)])
+        SwarmAgent(starting_cell=self.tiled_enviro[(0, 1)])
         self.unsuccesful_forward_step_tester(pre_occupied_cell=(0, 1))
 
     def wall_and_corner_tester(
@@ -502,7 +506,7 @@ class swarm_agent_tester(unittest.TestCase):
     def test_agent_returns_correct_state_facing_top_left_corner_with_agent_on_right(
         self,
     ):
-        SwarmAgent(id=2, starting_cell=self.tiled_enviro[(0, 1)])
+        SwarmAgent(starting_cell=self.tiled_enviro[(0, 1)])
 
         self.state_tester(
             correct_navigation_states=[
@@ -516,7 +520,7 @@ class swarm_agent_tester(unittest.TestCase):
     def test_agent_returns_correct_state_at_top_left_corner_facing_agent_on_right(
         self,
     ):
-        SwarmAgent(id=2, starting_cell=self.tiled_enviro[(0, 1)])
+        SwarmAgent(starting_cell=self.tiled_enviro[(0, 1)])
 
         self.state_tester(
             correct_navigation_states=[
@@ -530,7 +534,7 @@ class swarm_agent_tester(unittest.TestCase):
     def test_agent_returns_correct_state_at_top_left_corner_but_facing_away_from_agent(
         self,
     ):
-        SwarmAgent(id=2, starting_cell=self.tiled_enviro[(0, 1)])
+        SwarmAgent(starting_cell=self.tiled_enviro[(0, 1)])
 
         self.state_tester(
             correct_navigation_states=[
@@ -542,7 +546,7 @@ class swarm_agent_tester(unittest.TestCase):
         )
 
     def test_agent_returns_correct_state_facing_agent_on_an_empty_square(self):
-        SwarmAgent(id=2, starting_cell=self.tiled_enviro[(0, 1)])
+        SwarmAgent(starting_cell=self.tiled_enviro[(0, 1)])
 
         self.state_tester(
             correct_navigation_states=[
@@ -555,7 +559,7 @@ class swarm_agent_tester(unittest.TestCase):
         )
 
     def test_agent_returns_correct_state_facing_agent_on_left_wall_square(self):
-        SwarmAgent(id=2, starting_cell=self.tiled_enviro[(1, 1)])
+        SwarmAgent(starting_cell=self.tiled_enviro[(1, 1)])
 
         self.state_tester(
             correct_navigation_states=[
@@ -565,6 +569,201 @@ class swarm_agent_tester(unittest.TestCase):
             obj_description="agent",
             agent_direction=Direction.RIGHT,
             different_starting_cell=(1, 0),
+        )
+
+    def return_sense_tester_agent(
+        self, starting_cell: Dict[str, any], sense: bool
+    ) -> SwarmAgent:
+        return SwarmAgent(starting_cell=starting_cell, sensing=sense)
+
+    def test_agent_when_sensing_updates_num_of_white_tiles_when_on_white_tile(self):
+        swarm_agent = self.return_sense_tester_agent(
+            starting_cell=self.clusted_enviro_obs_useful[(0, 0)], sense=True
+        )
+
+        self.assertEqual(
+            swarm_agent.num_of_white_cells_observed, 1, "num_of_white_tiles should be 1"
+        )
+
+    def test_agent_when_sensing_updates_num_of_white_tiles_when_on_white_tile_twice(
+        self,
+    ):
+        swarm_agent = self.return_sense_tester_agent(
+            starting_cell=self.clusted_enviro_obs_useful[(0, 0)], sense=True
+        )
+        swarm_agent.turn(1)
+        swarm_agent.forward_step(tile_grid=self.clusted_enviro_obs_useful)
+        self.assertEqual(
+            swarm_agent.num_of_white_cells_observed, 2, "num_of_white_tiles should be 2"
+        )
+
+    def test_agent_when_not_sensing_doesnt_update_num_of_white_tiles_when_on_white_tile(
+        self,
+    ):
+        swarm_agent = self.return_sense_tester_agent(
+            starting_cell=self.clusted_enviro_obs_useful[(0, 0)], sense=False
+        )
+
+        self.assertEqual(
+            swarm_agent.num_of_white_cells_observed, 0, "num_of_white_tiles should be 0"
+        )
+
+    def test_agent_when_not_sensing_doesnt_update_num_of_white_tiles_when_on_white_tile_twice(
+        self,
+    ):
+        swarm_agent = self.return_sense_tester_agent(
+            starting_cell=self.clusted_enviro_obs_useful[(0, 0)], sense=False
+        )
+        swarm_agent.turn(1)
+        swarm_agent.forward_step(tile_grid=self.clusted_enviro_obs_useful)
+        self.assertEqual(
+            swarm_agent.num_of_white_cells_observed, 0, "num_of_white_tiles should be 0"
+        )
+
+    def test_agent_when_sensing_doesnt_update_num_of_white_tiles_when_on_black_tile(
+        self,
+    ):
+        swarm_agent = self.return_sense_tester_agent(
+            starting_cell=self.clusted_enviro_obs_not_useful[(0, 0)], sense=True
+        )
+
+        self.assertEqual(
+            swarm_agent.num_of_white_cells_observed, 0, "num_of_white_tiles should be 0"
+        )
+
+    def test_agent_when_sensing_updates_num_of_white_tiles_when_on_black_then_white_tile(
+        self,
+    ):
+        swarm_agent = self.return_sense_tester_agent(
+            starting_cell=self.clusted_enviro_obs_not_useful[(0, 0)], sense=True
+        )
+        swarm_agent.turn(1)
+        swarm_agent.forward_step(tile_grid=self.clusted_enviro_obs_useful)
+        self.assertEqual(
+            swarm_agent.num_of_white_cells_observed, 1, "num_of_white_tiles should be 2"
+        )
+
+    def test_agent_when_not_sensing_doesnt_update_num_of_white_tiles_when_on_black_tile(
+        self,
+    ):
+        swarm_agent = self.return_sense_tester_agent(
+            starting_cell=self.clusted_enviro_obs_not_useful[(0, 0)], sense=False
+        )
+
+        self.assertEqual(
+            swarm_agent.num_of_white_cells_observed, 0, "num_of_white_tiles should be 0"
+        )
+
+    def test_return_opinion_sensing_true_returns_none(self):
+        self.assertEqual(
+            self.swarm_agent.return_opinion(), None, "return_opinion should be None"
+        )
+
+    def test_return_opinion_sensing_false_returns_int(self):
+        self.swarm_agent.sensing = False
+        self.swarm_agent.perform_navigation_action(0, self.tiled_enviro)
+        self.assertIsInstance(
+            self.swarm_agent.return_opinion(), int, "return_opinion should be int"
+        )
+
+    def test_return_opinion_returns_1_majorty_white(self):
+        swarm_agent = self.return_sense_tester_agent(
+            starting_cell=self.clusted_enviro_obs_useful[(0, 0)], sense=True
+        )
+        swarm_agent.perform_navigation_action(2, self.clusted_enviro_obs_useful)
+        for i in range(3):
+            swarm_agent.perform_navigation_action(0, self.clusted_enviro_obs_useful)
+        swarm_agent.sensing = False
+        self.assertEqual(
+            swarm_agent.return_opinion(), 1, "return_opinion should be 1 for white"
+        )
+
+    def test_return_opinion_returns_0_majorty_black(self):
+        swarm_agent = self.return_sense_tester_agent(
+            starting_cell=self.clusted_enviro_obs_not_useful[(0, 0)], sense=True
+        )
+        swarm_agent.perform_navigation_action(2, self.clusted_enviro_obs_not_useful)
+        for i in range(3):
+            swarm_agent.perform_navigation_action(0, self.clusted_enviro_obs_not_useful)
+        swarm_agent.sensing = False
+        self.assertEqual(
+            swarm_agent.return_opinion(), 0, "return_opinion should be 0 for black"
+        )
+
+    def test_return_opinion_returns_1_when_55_white(self):
+        self.swarm_agent.num_of_white_cells_observed = 11
+        self.swarm_agent.num_of_cells_observed = 20
+        self.swarm_agent.sensing = False
+        self.assertEqual(
+            self.swarm_agent.return_opinion(), 1, "return_opinion should be 1 for white"
+        )
+
+    def test_return_opinion_returns_0_when_45_white(self):
+        self.swarm_agent.num_of_white_cells_observed = 9
+        self.swarm_agent.num_of_cells_observed = 20
+        self.swarm_agent.sensing = False
+        self.assertEqual(
+            self.swarm_agent.return_opinion(), 0, "return_opinion should be 0 for black"
+        )
+
+    def test_update_internal_collective_opinion(self):
+        self.swarm_agent.update_calculated_collective_opinion(1)
+        self.swarm_agent.update_calculated_collective_opinion(0)
+        self.assertAlmostEqual(
+            self.swarm_agent.calculated_collective_opinion,
+            0.495,
+            msg="internal_collective_opinion should be 0.495",
+            places=3,
+        )
+
+    def test_recieve_local_opinions_all_filled(self):
+        self.swarm_agent.leave_cell(self.tiled_enviro[(0, 0)])
+        swarm_agent = SwarmAgent(starting_cell=self.tiled_enviro[(1, 1)])
+
+        for i in range(3):
+            agent = SwarmAgent(starting_cell=self.tiled_enviro[0, i], sensing=False)
+            agent.num_of_white_cells_observed += 1
+            agent.num_of_cells_observed += 1
+        for i in range(3):
+            agent = SwarmAgent(starting_cell=self.tiled_enviro[2, i], sensing=False)
+            agent.num_of_cells_observed += 1
+        for i in range(0, 3, 2):
+            agent = SwarmAgent(starting_cell=self.tiled_enviro[1, i], sensing=False)
+            agent.num_of_white_cells_observed += int(bool(i))
+            agent.num_of_cells_observed += 1
+
+        swarm_agent.recieve_local_opinions(tile_grid=self.tiled_enviro)
+
+        self.assertAlmostEqual(
+            swarm_agent.calculated_collective_opinion,
+            0.448156395,
+            msg="internal_collective_opinion should be 0.495",
+            places=9,
+        )
+
+    def test_recieve_local_opinions_partially_filled_and_sensing_agnets(self):
+        self.swarm_agent.leave_cell(self.tiled_enviro[(0, 0)])
+        swarm_agent = SwarmAgent(starting_cell=self.tiled_enviro[(1, 1)])
+
+        for i in range(3):
+            agent = SwarmAgent(starting_cell=self.tiled_enviro[0, i], sensing=True)
+            agent.num_of_white_cells_observed += 1
+            agent.num_of_cells_observed += 1
+        for i in range(1):
+            agent = SwarmAgent(starting_cell=self.tiled_enviro[2, i], sensing=False)
+            agent.num_of_cells_observed += 1
+        for i in range(0, 3, 2):
+            agent = SwarmAgent(starting_cell=self.tiled_enviro[1, i], sensing=False)
+            agent.num_of_white_cells_observed += int(bool(i))
+            agent.num_of_cells_observed += 1
+
+        swarm_agent.recieve_local_opinions(tile_grid=self.tiled_enviro)
+
+        self.assertAlmostEqual(
+            swarm_agent.calculated_collective_opinion,
+            0.4545,
+            msg="internal_collective_opinion should be 0.495",
+            places=9,
         )
 
 
