@@ -2,6 +2,7 @@ import argparse
 from helper_files import calculate_optimal_number_of_steps_needed
 from experiment_modules_map import experiment_modules_map
 from skill_training_modules import train_skill_with_environment
+from skill_testing_modules import test_skill_with_environment
 
 parser = argparse.ArgumentParser(description="Experiment hyperparameters & settings")
 
@@ -59,7 +60,7 @@ parser.add_argument(
     ),
 )
 parser.add_argument(
-    "--max_num_steps",
+    "--max_num_of_steps",
     type=int,
     default=None,
     help=(
@@ -92,10 +93,16 @@ parser.add_argument(
     help=("The data directory name for the current experiment"),
 )
 parser.add_argument(
-    "--testing_module_name",
+    "--testing_environment",
     type=str,
     default=None,
     help=("The name of the testing module to use (default=None)."),
+)
+parser.add_argument(
+    "--environment_type_name",
+    type=str,
+    default="nonclustered_tile_grid",
+    help=("The name of the environment type (default=nonclustered_tile_grid)."),
 )
 parser.add_argument(
     "--training_environment",
@@ -124,12 +131,14 @@ parser.add_argument(
 
 args = parser.parse_args()
 
-if not (args.max_num_steps):
-    args.max_num_steps = (
-        args.optimal_step_multiplier
-        * calculate_optimal_number_of_steps_needed(
-            tiled_environment_width=args.width,
-            tiled_environment_height=args.height,
+if not (args.max_num_of_steps):
+    args.max_num_of_steps = int(
+        (
+            args.optimal_step_multiplier
+            * calculate_optimal_number_of_steps_needed(
+                tiled_environment_width=args.width,
+                tiled_environment_height=args.height,
+            )
         )
     )
 
@@ -139,7 +148,8 @@ def main(args: argparse.Namespace) -> None:
         args.training_environment = experiment_modules_map[args.training_environment]
         train_skill_with_environment(args=args)
     else:
-        experiment_modules_map[args.training_testing_module_name](args)
+        args.testing_environment = experiment_modules_map[args.testing_environment]
+        test_skill_with_environment(args=args)
 
 
 if __name__ == "__main__":

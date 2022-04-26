@@ -1,4 +1,8 @@
-from skill_testing_modules import test_random_walk_with_single_agent
+from skill_testing_modules import (
+    CellsPerMinuteEvaluator,
+    CellsPerMinuteEvaluatorFreeRegion,
+    CorrectSenseBroadcastEvaluator,
+)
 from skill_training_modules import (
     SingleAgentNavigationTrainer,
     MultiAgentNavigationTrainer,
@@ -6,8 +10,10 @@ from skill_training_modules import (
 )
 
 experiment_modules_map = {
-    "test_random_walk_with_single_agent": test_random_walk_with_single_agent,
     "single_agent_navigation_trainer": SingleAgentNavigationTrainer,
     "multi_agent_navigation_trainer": MultiAgentNavigationTrainer,
     "sense_broadcast_trainer": SenseBroadcastTrainer,
+    "cells_per_minute_evaluator": CellsPerMinuteEvaluator,
+    "cells_per_minute_evaluator_free_region": CellsPerMinuteEvaluatorFreeRegion,
+    "correct_sense_broadcast_evaluator": CorrectSenseBroadcastEvaluator,
 }

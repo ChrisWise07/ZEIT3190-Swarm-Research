@@ -1,3 +1,4 @@
+from re import S
 import unittest
 from typing import List, Tuple, Union, Dict
 
@@ -763,6 +764,55 @@ class swarm_agent_tester(unittest.TestCase):
             swarm_agent.calculated_collective_opinion,
             0.4545,
             msg="internal_collective_opinion should be 0.495",
+            places=9,
+        )
+
+    def test_recieve_local_opinions_in_top_left_corner(self):
+        other_swarm_agent = SwarmAgent(
+            starting_cell=self.tiled_enviro[(0, 1)], sensing=False
+        )
+        other_corner_swarm_agent = SwarmAgent(
+            starting_cell=self.tiled_enviro[(4, 4)], sensing=False
+        )
+
+        other_swarm_agent.num_of_white_cells_observed += 3
+        other_swarm_agent.num_of_cells_observed += 3
+        other_corner_swarm_agent.num_of_cells_observed += 1
+
+        self.swarm_agent.recieve_local_opinions(tile_grid=self.tiled_enviro)
+
+        self.assertAlmostEqual(
+            self.swarm_agent.calculated_collective_opinion,
+            0.55,
+            msg="internal_collective_opinion should be 0.55",
+            places=9,
+        )
+
+    def test_recieve_local_opinions_in_bottom_right_corner(self):
+        self.swarm_agent.leave_cell(self.tiled_enviro[(0, 0)])
+
+        top_left_swarm_agent = SwarmAgent(
+            starting_cell=self.tiled_enviro[(0, 0)], sensing=False
+        )
+
+        bottom_right_swarm_agent = SwarmAgent(
+            starting_cell=self.tiled_enviro[(4, 4)], sensing=False
+        )
+
+        other_swarm_agent = SwarmAgent(
+            starting_cell=self.tiled_enviro[(3, 4)], sensing=False
+        )
+
+        top_left_swarm_agent.num_of_white_cells_observed += 3
+        top_left_swarm_agent.num_of_cells_observed += 3
+        other_swarm_agent.num_of_cells_observed += 1
+
+        bottom_right_swarm_agent.recieve_local_opinions(tile_grid=self.tiled_enviro)
+
+        self.assertAlmostEqual(
+            bottom_right_swarm_agent.calculated_collective_opinion,
+            0.45,
+            msg="internal_collective_opinion should be 0.45",
             places=9,
         )
 

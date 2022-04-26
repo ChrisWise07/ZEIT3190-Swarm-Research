@@ -1,10 +1,8 @@
-from operator import length_hint
 import numpy as np
 
 from dataclasses import dataclass, field, InitVar
 from typing import Any, Dict, List, Tuple, Set, Union
 
-from urllib3 import Retry
 from .tile_properties import WallType
 from .utils import validate_cell
 from helper_files import TRAINED_MODELS_DIRECTORY
@@ -22,6 +20,7 @@ class SwarmAgent:
     needs_models_loaded: InitVar[bool] = False
     current_direction_facing: int = Direction.RIGHT.value
     navigation_model = None
+    sense_broadcast_model = None
     sensing: bool = True
     num_of_white_cells_observed: int = 0
     num_of_cells_observed: int = 0
@@ -42,6 +41,10 @@ class SwarmAgent:
                 f"{TRAINED_MODELS_DIRECTORY}/multi_agent_nav_model"
             )
 
+            self.sense_broadcast_model = PPO.load(
+                f"{TRAINED_MODELS_DIRECTORY}/sense_broadcast_model"
+            )
+
         if not (self.occupy_cell(starting_cell)):
             self.current_cell = (None, None)
 
@@ -59,6 +62,11 @@ class SwarmAgent:
             return True
 
         return False
+
+    def return_num_of_cells_visited(self) -> int:
+        if self.current_cell in self.cells_visited:
+            return len(self.cells_visited)
+        return len(self.cells_visited) + 1
 
     def leave_cell(self, tile: Dict) -> None:
         tile["agent"] = None
@@ -134,9 +142,7 @@ class SwarmAgent:
             tile_walls=tile_grid[self.current_cell]["walls"]
         )
 
-    def perform_navigation_action(
-        self, action: np.ndarray, tile_grid: np.ndarray
-    ) -> None:
+    def perform_navigation_action(self, action: int, tile_grid: np.ndarray) -> None:
         self.add_cell_to_visited_list(self.current_cell)
 
         if isinstance(action, (np.ndarray)):
@@ -174,16 +180,21 @@ class SwarmAgent:
 
     def recieve_local_opinions(self, tile_grid: np.ndarray):
         current_y, current_x = self.current_cell
+
+        communication_y_min = max(0, current_y - self.communication_range)
+        communication_x_min = max(0, current_x - self.communication_range)
+        communication_y_max = min(
+            tile_grid.shape[0], current_y + self.communication_range
+        )
+        communication_x_max = min(
+            tile_grid.shape[1], current_y + self.communication_range
+        )
+
         local_area = tile_grid[
-            current_y
-            - self.communication_range : current_y
-            + self.communication_range
-            + 1,
-            current_x
-            - self.communication_range : current_x
-            + self.communication_range
-            + 1,
+            communication_y_min : communication_y_max + 1,
+            communication_x_min : communication_x_max + 1,
         ]
+
         for tile in local_area.flat:
             if tile["agent"] and tile["agent"] != self:
                 recieved_opinion = tile["agent"].return_opinion()
@@ -202,3 +213,19 @@ class SwarmAgent:
             ),
             dtype=np.float32,
         )
+
+    def choose_sense_broadcast_action(self) -> int:
+        return self.sense_broadcast_model.predict(self.return_sense_broadcast_states())[
+            0
+        ].item()
+
+    def decide_to_sense_or_broadcast(self) -> None:
+        self.sensing = bool(self.choose_sense_broadcast_action())
+
+    def perform_decision_navigate_opinion_update_cycle(
+        self, tile_grid: np.ndarray
+    ) -> None:
+        self.decide_to_sense_or_broadcast()
+        self.navigate(tile_grid=tile_grid)
+        self.recieve_local_opinions(tile_grid=tile_grid)
+        # decide if done add here
