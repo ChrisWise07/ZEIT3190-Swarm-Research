@@ -2,6 +2,8 @@ import sys
 import os
 import wandb
 from typing import Dict
+from stable_baselines3.common.env_checker import check_env
+from stable_baselines3 import PPO
 
 root_dir = os.path.dirname(os.path.realpath(__file__))
 
@@ -14,7 +16,8 @@ from skill_training_modules import (
     MultiAgentNavigationTrainer,
     SenseBroadcastTrainer,
 )
-from stable_baselines3.common.env_checker import check_env
+
+from helper_files import TRAINED_MODELS_DIRECTORY
 
 EPISODES = 3
 ITERATIONS_PER_EPISODE = 5
@@ -30,6 +33,11 @@ def generic_env_check(env_name: str, env_configs: Dict[str, int]):
     wandb.init(mode="disabled")
 
     env = env_name_to_class_map[env_name](**env_configs)
+
+    if env_configs["model"]:
+        model = PPO.load(f"{TRAINED_MODELS_DIRECTORY}/{env_configs['model']}")
+        env.set_model(model)
+
     check_env(env)
 
     for _ in range(EPISODES):

@@ -575,7 +575,7 @@ class swarm_agent_tester(unittest.TestCase):
     def return_sense_tester_agent(
         self, starting_cell: Dict[str, any], sense: bool
     ) -> SwarmAgent:
-        return SwarmAgent(starting_cell=starting_cell, sensing=sense)
+        return SwarmAgent(starting_cell=starting_cell, sensing=int(sense))
 
     def test_agent_when_sensing_updates_num_of_white_tiles_when_on_white_tile(self):
         swarm_agent = self.return_sense_tester_agent(
@@ -661,7 +661,7 @@ class swarm_agent_tester(unittest.TestCase):
         )
 
     def test_return_opinion_sensing_false_returns_int(self):
-        self.swarm_agent.sensing = False
+        self.swarm_agent.sensing = 0
         self.swarm_agent.perform_navigation_action(0, self.tiled_enviro)
         self.assertIsInstance(
             self.swarm_agent.return_opinion(), int, "return_opinion should be int"
@@ -674,7 +674,7 @@ class swarm_agent_tester(unittest.TestCase):
         swarm_agent.perform_navigation_action(2, self.clusted_enviro_obs_useful)
         for i in range(3):
             swarm_agent.perform_navigation_action(0, self.clusted_enviro_obs_useful)
-        swarm_agent.sensing = False
+        swarm_agent.sensing = 0
         self.assertEqual(
             swarm_agent.return_opinion(), 1, "return_opinion should be 1 for white"
         )
@@ -686,7 +686,7 @@ class swarm_agent_tester(unittest.TestCase):
         swarm_agent.perform_navigation_action(2, self.clusted_enviro_obs_not_useful)
         for i in range(3):
             swarm_agent.perform_navigation_action(0, self.clusted_enviro_obs_not_useful)
-        swarm_agent.sensing = False
+        swarm_agent.sensing = 0
         self.assertEqual(
             swarm_agent.return_opinion(), 0, "return_opinion should be 0 for black"
         )
@@ -694,7 +694,7 @@ class swarm_agent_tester(unittest.TestCase):
     def test_return_opinion_returns_1_when_55_white(self):
         self.swarm_agent.num_of_white_cells_observed = 11
         self.swarm_agent.num_of_cells_observed = 20
-        self.swarm_agent.sensing = False
+        self.swarm_agent.sensing = 0
         self.assertEqual(
             self.swarm_agent.return_opinion(), 1, "return_opinion should be 1 for white"
         )
@@ -702,7 +702,7 @@ class swarm_agent_tester(unittest.TestCase):
     def test_return_opinion_returns_0_when_45_white(self):
         self.swarm_agent.num_of_white_cells_observed = 9
         self.swarm_agent.num_of_cells_observed = 20
-        self.swarm_agent.sensing = False
+        self.swarm_agent.sensing = 0
         self.assertEqual(
             self.swarm_agent.return_opinion(), 0, "return_opinion should be 0 for black"
         )
@@ -722,14 +722,14 @@ class swarm_agent_tester(unittest.TestCase):
         swarm_agent = SwarmAgent(starting_cell=self.tiled_enviro[(1, 1)])
 
         for i in range(3):
-            agent = SwarmAgent(starting_cell=self.tiled_enviro[0, i], sensing=False)
+            agent = SwarmAgent(starting_cell=self.tiled_enviro[0, i], sensing=0)
             agent.num_of_white_cells_observed += 1
             agent.num_of_cells_observed += 1
         for i in range(3):
-            agent = SwarmAgent(starting_cell=self.tiled_enviro[2, i], sensing=False)
+            agent = SwarmAgent(starting_cell=self.tiled_enviro[2, i], sensing=0)
             agent.num_of_cells_observed += 1
         for i in range(0, 3, 2):
-            agent = SwarmAgent(starting_cell=self.tiled_enviro[1, i], sensing=False)
+            agent = SwarmAgent(starting_cell=self.tiled_enviro[1, i], sensing=0)
             agent.num_of_white_cells_observed += int(bool(i))
             agent.num_of_cells_observed += 1
 
@@ -747,14 +747,14 @@ class swarm_agent_tester(unittest.TestCase):
         swarm_agent = SwarmAgent(starting_cell=self.tiled_enviro[(1, 1)])
 
         for i in range(3):
-            agent = SwarmAgent(starting_cell=self.tiled_enviro[0, i], sensing=True)
+            agent = SwarmAgent(starting_cell=self.tiled_enviro[0, i], sensing=1)
             agent.num_of_white_cells_observed += 1
             agent.num_of_cells_observed += 1
         for i in range(1):
-            agent = SwarmAgent(starting_cell=self.tiled_enviro[2, i], sensing=False)
+            agent = SwarmAgent(starting_cell=self.tiled_enviro[2, i], sensing=0)
             agent.num_of_cells_observed += 1
         for i in range(0, 3, 2):
-            agent = SwarmAgent(starting_cell=self.tiled_enviro[1, i], sensing=False)
+            agent = SwarmAgent(starting_cell=self.tiled_enviro[1, i], sensing=0)
             agent.num_of_white_cells_observed += int(bool(i))
             agent.num_of_cells_observed += 1
 
@@ -769,10 +769,10 @@ class swarm_agent_tester(unittest.TestCase):
 
     def test_recieve_local_opinions_in_top_left_corner(self):
         other_swarm_agent = SwarmAgent(
-            starting_cell=self.tiled_enviro[(0, 1)], sensing=False
+            starting_cell=self.tiled_enviro[(0, 1)], sensing=0
         )
         other_corner_swarm_agent = SwarmAgent(
-            starting_cell=self.tiled_enviro[(4, 4)], sensing=False
+            starting_cell=self.tiled_enviro[(4, 4)], sensing=0
         )
 
         other_swarm_agent.num_of_white_cells_observed += 3
@@ -792,15 +792,15 @@ class swarm_agent_tester(unittest.TestCase):
         self.swarm_agent.leave_cell(self.tiled_enviro[(0, 0)])
 
         top_left_swarm_agent = SwarmAgent(
-            starting_cell=self.tiled_enviro[(0, 0)], sensing=False
+            starting_cell=self.tiled_enviro[(0, 0)], sensing=0
         )
 
         bottom_right_swarm_agent = SwarmAgent(
-            starting_cell=self.tiled_enviro[(4, 4)], sensing=False
+            starting_cell=self.tiled_enviro[(4, 4)], sensing=0
         )
 
         other_swarm_agent = SwarmAgent(
-            starting_cell=self.tiled_enviro[(3, 4)], sensing=False
+            starting_cell=self.tiled_enviro[(3, 4)], sensing=0
         )
 
         top_left_swarm_agent.num_of_white_cells_observed += 3

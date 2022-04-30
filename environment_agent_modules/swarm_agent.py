@@ -21,7 +21,7 @@ class SwarmAgent:
     current_direction_facing: int = Direction.RIGHT.value
     navigation_model = None
     sense_broadcast_model = None
-    sensing: bool = True
+    sensing: int = 1
     num_of_white_cells_observed: int = 0
     num_of_cells_observed: int = 0
     collective_opinion_weight: float = 0.9
@@ -220,7 +220,7 @@ class SwarmAgent:
         ].item()
 
     def decide_to_sense_or_broadcast(self) -> None:
-        self.sensing = bool(self.choose_sense_broadcast_action())
+        self.sensing = self.choose_sense_broadcast_action()
 
     def perform_decision_navigate_opinion_update_cycle(
         self, tile_grid: np.ndarray

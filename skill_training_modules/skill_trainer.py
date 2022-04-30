@@ -37,7 +37,7 @@ def train_skill_with_environment(args: argparse.Namespace) -> None:
         sync_tensorboard=True,
     )
 
-    env = DummyVecEnv([lambda: Monitor(config["training_environment"](**config))])
+    env = config["training_environment"](**config)
 
     tensorboard_log_path = f"{LOGS_DIRECTORY}/{config['experiment_name']}_{run.id}"
 
@@ -47,6 +47,8 @@ def train_skill_with_environment(args: argparse.Namespace) -> None:
         verbose=config["verbose"],
         tensorboard_log=tensorboard_log_path,
     )
+
+    env.set_model(model)
 
     if config["previous_model"]:
         model.set_parameters(f"{TRAINED_MODELS_DIRECTORY}/{config['previous_model']}")
