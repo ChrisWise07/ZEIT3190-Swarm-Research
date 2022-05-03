@@ -97,7 +97,7 @@ def move_and_show_window(x: int, y: int, winname: str, img: np.ndarray) -> None:
 def main() -> None:
     tile_grid = create_nonclustered_tile_grid(20, 20)
     swarm_agents = [
-        SwarmAgent(id=i, starting_cell=tile_grid[i, i], needs_models_loaded=True)
+        SwarmAgent(starting_cell=tile_grid[i, i], needs_models_loaded=True)
         for i in range(20)
     ]
 

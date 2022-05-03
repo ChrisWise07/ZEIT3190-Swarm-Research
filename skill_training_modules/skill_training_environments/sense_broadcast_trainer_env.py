@@ -68,10 +68,10 @@ class SenseBroadcastTrainer(gym.Env):
         else:
             if agent_opinion == self.correct_opinion:
                 self.broadcast_true_positves += 1
-                reward = 2
+                reward = 1
             else:
                 self.broadcast_false_positves += 1
-                reward = -4
+                reward = -1
 
         wandb.log(
             {
