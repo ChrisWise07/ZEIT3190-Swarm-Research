@@ -17,6 +17,10 @@ from .swarm_agent_enums import (
 @dataclass(repr=False, eq=False)
 class SwarmAgent:
     starting_cell: InitVar[Dict[str, Any]]
+    model_names: InitVar[Dict[str, str]] = {
+        "nav_model": "single_agent_nav_model",
+        "sense_model": "sense_broadcast_model",
+    }
     needs_models_loaded: InitVar[bool] = False
     current_direction_facing: int = Direction.RIGHT.value
     navigation_model = None
@@ -31,18 +35,21 @@ class SwarmAgent:
     cells_visited: Set[Tuple[int, int]] = field(init=False)
 
     def __post_init__(
-        self, starting_cell: Dict[str, Any], needs_models_loaded: bool
+        self,
+        starting_cell: Dict[str, Any],
+        model_names: Dict[str, str],
+        needs_models_loaded: bool,
     ) -> None:
         self.cells_visited = set()
         if needs_models_loaded:
             from stable_baselines3 import PPO
 
             self.navigation_model = PPO.load(
-                f"{TRAINED_MODELS_DIRECTORY}/multi_agent_nav_model"
+                f"{TRAINED_MODELS_DIRECTORY}/{model_names.get('nav_model')}"
             )
 
             self.sense_broadcast_model = PPO.load(
-                f"{TRAINED_MODELS_DIRECTORY}/sense_broadcast_model"
+                f"{TRAINED_MODELS_DIRECTORY}/{model_names.get('sense_model')}"
             )
 
         if not (self.occupy_cell(starting_cell)):

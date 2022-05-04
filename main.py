@@ -128,6 +128,12 @@ parser.add_argument(
     default=1,
     help=("Controls the verbosity of the output (default=1)"),
 )
+parser.add_argument(
+    "--eval_model_name",
+    type=str,
+    default=None,
+    help=("Name of model to evaluate (default=None)"),
+)
 
 args = parser.parse_args()
 

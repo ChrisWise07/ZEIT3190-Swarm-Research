@@ -15,7 +15,7 @@ from environment_agent_modules import (
 from .testing_utils import environment_type_map
 
 
-class CorrectSenseBroadcastEvaluator:
+class RandomActionCorrectSenseBroadcastEvaluator:
     def __init__(
         self,
         width: int,
@@ -36,9 +36,9 @@ class CorrectSenseBroadcastEvaluator:
 
     def step(self, step_number: int):
         for agent in self.swarm_agents:
-            agent.perform_decision_navigate_opinion_update_cycle(
-                tile_grid=self.tile_grid
-            )
+            agent.sensing = random.randint(0, 1)
+            agent.navigate(tile_grid=self.tile_grid)
+            agent.recieve_local_opinions(tile_grid=self.tile_grid)
 
         for agent in self.swarm_agents:
             agent_opinion = agent.return_opinion()
@@ -95,10 +95,6 @@ class CorrectSenseBroadcastEvaluator:
         self.swarm_agents = [
             SwarmAgent(
                 starting_cell=(self.tile_grid[all_possible_tiles.pop(0)]),
-                model_names={
-                    "nav_model": "single_agent_nav_model",
-                    "sense_model": self.eval_model_name,
-                },
                 current_direction_facing=random.randint(0, 3),
                 needs_models_loaded=True,
             )

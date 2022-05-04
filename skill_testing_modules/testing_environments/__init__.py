@@ -1,3 +1,6 @@
 from .cells_per_minute_evaluator import CellsPerMinuteEvaluator
 from .cells_per_minute_evaluator_free_region import CellsPerMinuteEvaluatorFreeRegion
 from .correct_sense_broadcast_evaluator import CorrectSenseBroadcastEvaluator
+from .random_action_correct_sense_broadcast_evaluator import (
+    RandomActionCorrectSenseBroadcastEvaluator,
+)

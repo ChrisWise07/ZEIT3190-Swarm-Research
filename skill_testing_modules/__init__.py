@@ -3,4 +3,5 @@ from .testing_environments import (
     CellsPerMinuteEvaluator,
     CellsPerMinuteEvaluatorFreeRegion,
     CorrectSenseBroadcastEvaluator,
+    RandomActionCorrectSenseBroadcastEvaluator,
 )
