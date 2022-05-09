@@ -13,21 +13,13 @@ sys.path.append(ROOT_DIRECTORY)
 
 from environment_agent_modules import (
     SwarmAgent,
-    create_nonclustered_tile_grid,
-    create_clustered_inital_observation_useful_tile_grid,
-    create_clustered_inital_observation_not_useful_tile_grid,
     return_ratio_of_white_to_black_tiles,
 )
 
-environment_type_list = [
-    create_nonclustered_tile_grid,
-    create_clustered_inital_observation_useful_tile_grid,
-    create_clustered_inital_observation_not_useful_tile_grid,
-]
-
-
-def inverse_sigmoid_for_weighting(broadcast_percentage: float) -> float:
-    return 100 / ((1 + np.exp(0.1 * (broadcast_percentage - 50))) + 0.00001)
+from .training_environment_utils import (
+    environment_type_list,
+    inverse_sigmoid_for_weighting,
+)
 
 
 class SenseBroadcastTrainer(gym.Env):
@@ -59,37 +51,30 @@ class SenseBroadcastTrainer(gym.Env):
         self.model = model
 
     def step(self, action):
-        agent_opinion = self.swarm_agents[
-            self.position_of_swarm_agent_to_train
-        ].return_opinion()
-
-        agent_calculated_opinion = self.swarm_agents[
-            self.position_of_swarm_agent_to_train
-        ].calculate_opinion()
-
         for pos, agent in enumerate(self.swarm_agents):
-            agent.sensing = (
-                action
-                if pos == self.position_of_swarm_agent_to_train
-                else self.model.predict(agent.return_sense_broadcast_states())[0].item()
-            )
+            if pos == self.position_of_swarm_agent_to_train:
+                agent.sensing = action
+                if agent.sensing:
+                    if agent.calculate_opinion() != self.correct_opinion:
+                        self.broadcast_true_negatives += 1
+                        reward = 2
+                    else:
+                        self.broadcast_false_negatives += 1
+                        reward = -1
+                else:  # agent is broadcasting
+                    if agent.calculate_opinion() == self.correct_opinion:
+                        self.broadcast_true_positives += 1
+                        reward = 1
+                    else:
+                        self.broadcast_false_positives += 1
+                        reward = -2
+            else:
+                agent.sensing = self.model.predict(
+                    agent.return_sense_broadcast_states()
+                )[0].item()
+
             agent.navigate(tile_grid=self.tile_grid)
             agent.recieve_local_opinions(tile_grid=self.tile_grid)
-
-        if agent_opinion is None:
-            if agent_calculated_opinion != self.correct_opinion:
-                self.broadcast_true_negatives += 1
-                reward = 1
-            else:
-                self.broadcast_false_negatives += 1
-                reward = -1
-        else:
-            if agent_opinion == self.correct_opinion:
-                self.broadcast_true_positives += 1
-                reward = 1
-            else:
-                self.broadcast_false_positives += 1
-                reward = -1
 
         wandb.log(
             {
@@ -125,10 +110,6 @@ class SenseBroadcastTrainer(gym.Env):
                 inverse_sigmoid_for_weighting(broadcast_accuracy * 100)
             )
 
-        self.position_of_swarm_agent_to_train = random.randint(
-            0, self.num_of_swarm_agents - 1
-        )
-
         return (
             self.swarm_agents[
                 self.position_of_swarm_agent_to_train
@@ -141,7 +122,6 @@ class SenseBroadcastTrainer(gym.Env):
     def reset(self):
         self.done = False
         self.num_steps = 0
-        self.max_num_steps = int(self.max_num_steps)
         self.decision_correctness_tracker = np.zeros(self.max_num_steps)
 
         self.index_of_environment = random.choices(

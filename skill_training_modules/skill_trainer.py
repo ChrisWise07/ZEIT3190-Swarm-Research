@@ -12,8 +12,6 @@ def train_skill_with_environment(args: argparse.Namespace) -> None:
     import wandb
     from stable_baselines3 import PPO
     from wandb.integration.sb3 import WandbCallback
-    from stable_baselines3.common.monitor import Monitor
-    from stable_baselines3.common.vec_env import DummyVecEnv
 
     config = vars(args)
 

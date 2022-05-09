@@ -15,6 +15,7 @@ from skill_training_modules import (
     SingleAgentNavigationTrainer,
     MultiAgentNavigationTrainer,
     SenseBroadcastTrainer,
+    CommitToOpinionTrainer,
 )
 
 from helper_files import TRAINED_MODELS_DIRECTORY
@@ -26,6 +27,7 @@ env_name_to_class_map = {
     "single_agent_navigation": SingleAgentNavigationTrainer,
     "multi_agent_navigation": MultiAgentNavigationTrainer,
     "sense_broadcast": SenseBroadcastTrainer,
+    "commit_to_opinion": CommitToOpinionTrainer,
 }
 
 
@@ -42,7 +44,7 @@ def generic_env_check(env_name: str, env_configs: Dict[str, int]):
 
     for _ in range(EPISODES):
         print("--- Reset ---")
-        env.reset()
+        print("First observations", env.reset())
         done = False
         while not (done):
             random_action = env.action_space.sample()

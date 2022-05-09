@@ -28,9 +28,11 @@ class SwarmAgent:
     sensing: int = 1
     num_of_white_cells_observed: int = 0
     num_of_cells_observed: int = 0
+    num_of_cycles_performed: int = 0
     collective_opinion_weight: float = 0.9
     calculated_collective_opinion: float = 0.5
     communication_range: int = 1
+    committed_to_opinion: int = 0
     current_cell: Tuple[int, int] = field(init=False)
     cells_visited: Set[Tuple[int, int]] = field(init=False)
 
@@ -81,8 +83,8 @@ class SwarmAgent:
 
     def return_navigation_reward(self) -> int:
         if self.current_cell in self.cells_visited:
-            return -1 / len(self.cells_visited)
-        return len(self.cells_visited)
+            return -1 / self.return_num_of_cells_visited()
+        return 1 * self.return_num_of_cells_visited()
 
     def __return_next_cell_coordinate(self) -> Tuple[int, int]:
         return {
@@ -229,10 +231,29 @@ class SwarmAgent:
     def decide_to_sense_or_broadcast(self) -> None:
         self.sensing = self.choose_sense_broadcast_action()
 
+    def return_commit_decision_states(self) -> np.ndarray:
+        opinion = self.calculate_opinion()
+
+        return np.array(
+            (
+                self.num_of_cycles_performed,
+                opinion,
+                self.calculated_collective_opinion,
+                abs(self.calculated_collective_opinion - opinion),
+            ),
+            dtype=np.float32,
+        )
+
     def perform_decision_navigate_opinion_update_cycle(
         self, tile_grid: np.ndarray
     ) -> None:
-        self.decide_to_sense_or_broadcast()
-        self.navigate(tile_grid=tile_grid)
-        self.recieve_local_opinions(tile_grid=tile_grid)
+        self.num_of_cycles_performed += 1
         # decide if done add here
+
+        if not (self.committed_to_opinion):
+            self.decide_to_sense_or_broadcast()
+            self.navigate(tile_grid=tile_grid)
+            self.recieve_local_opinions(tile_grid=tile_grid)
+        else:
+            self.sensing = 0
+            self.navigate(tile_grid=tile_grid)

@@ -11,9 +11,17 @@ from environment_agent_modules import create_nonclustered_tile_grid, SwarmAgent
 
 
 class CellsPerMinuteEvaluator:
-    def __init__(self, width: int, height: int, num_of_swarm_agents: int, **kwargs):
+    def __init__(
+        self,
+        width: int,
+        height: int,
+        num_of_swarm_agents: int,
+        eval_model_name: str,
+        **kwargs
+    ):
         self.width, self.height = width, height
         self.num_of_swarm_agents = num_of_swarm_agents
+        self.eval_model_name = eval_model_name
 
     def step(self, step_number: int):
         for agent in self.swarm_agents:
@@ -32,7 +40,7 @@ class CellsPerMinuteEvaluator:
 
             wandb.log(
                 {
-                    "average_num_of_new_cells_visited": np.mean(
+                    "average_num_of_new_cells_visited_in_minute": np.mean(
                         self.num_of_cells_visited_by_agent_in_minute
                     )
                 }
@@ -62,6 +70,10 @@ class CellsPerMinuteEvaluator:
                 starting_cell=(self.tile_grid[all_possible_tiles.pop(0)]),
                 current_direction_facing=random.randint(0, 3),
                 needs_models_loaded=True,
+                model_names={
+                    "nav_model": self.eval_model_name,
+                    "sense_model": "sense_broadcast_model",
+                },
             )
             for _ in range(self.num_of_swarm_agents)
         ]
