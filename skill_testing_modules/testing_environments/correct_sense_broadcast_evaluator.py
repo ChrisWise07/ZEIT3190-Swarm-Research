@@ -96,7 +96,7 @@ class CorrectSenseBroadcastEvaluator:
             SwarmAgent(
                 starting_cell=(self.tile_grid[all_possible_tiles.pop(0)]),
                 model_names={
-                    "nav_model": "single_agent_nav_model",
+                    "nav_model": "redone_single_agent_nav_redone",
                     "sense_model": self.eval_model_name,
                 },
                 current_direction_facing=random.randint(0, 3),

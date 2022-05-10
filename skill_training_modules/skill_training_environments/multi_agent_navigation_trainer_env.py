@@ -41,6 +41,7 @@ class MultiAgentNavigationTrainer(gym.Env):
         for pos, agent in enumerate(self.swarm_agents):
             if pos == self.position_of_swarm_agent_to_train:
                 agent.perform_navigation_action(action=action, tile_grid=self.tile_grid)
+                reward = agent.return_navigation_reward()
             else:
                 agent.perform_navigation_action(
                     action=self.model.predict(
@@ -48,10 +49,6 @@ class MultiAgentNavigationTrainer(gym.Env):
                     )[0].item(),
                     tile_grid=self.tile_grid,
                 )
-
-        reward = self.swarm_agents[
-            self.position_of_swarm_agent_to_train
-        ].return_navigation_reward()
 
         if (self.num_steps % 60) == 0:
             for pos, agent in enumerate(self.swarm_agents):
@@ -123,7 +120,7 @@ class MultiAgentNavigationTrainer(gym.Env):
             SwarmAgent(
                 starting_cell=(self.tile_grid[all_possible_tiles.pop(0)]),
                 current_direction_facing=random.randint(0, 3),
-                needs_models_loaded=True,
+                needs_models_loaded=False,
             )
             for _ in range(self.num_of_swarm_agents)
         ]

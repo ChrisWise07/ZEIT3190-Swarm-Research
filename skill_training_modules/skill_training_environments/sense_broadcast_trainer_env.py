@@ -57,17 +57,17 @@ class SenseBroadcastTrainer(gym.Env):
                 if agent.sensing:
                     if agent.calculate_opinion() != self.correct_opinion:
                         self.broadcast_true_negatives += 1
-                        reward = 2
+                        self.reward = 1
                     else:
                         self.broadcast_false_negatives += 1
-                        reward = -1
+                        self.reward = -1
                 else:  # agent is broadcasting
                     if agent.calculate_opinion() == self.correct_opinion:
                         self.broadcast_true_positives += 1
-                        reward = 1
+                        self.reward = 1
                     else:
                         self.broadcast_false_positives += 1
-                        reward = -2
+                        self.reward = -1
             else:
                 agent.sensing = self.model.predict(
                     agent.return_sense_broadcast_states()
@@ -114,7 +114,7 @@ class SenseBroadcastTrainer(gym.Env):
             self.swarm_agents[
                 self.position_of_swarm_agent_to_train
             ].return_sense_broadcast_states(),
-            reward,
+            self.reward,
             self.done,
             {},
         )

@@ -18,8 +18,8 @@ from .swarm_agent_enums import (
 class SwarmAgent:
     starting_cell: InitVar[Dict[str, Any]]
     model_names: InitVar[Dict[str, str]] = {
-        "nav_model": "single_agent_nav_model",
-        "sense_model": "sense_broadcast_model",
+        "nav_model": "redone_single_agent_nav_redone",
+        "sense_model": "sense_broadcast_model_lesson_weighting",
     }
     needs_models_loaded: InitVar[bool] = False
     current_direction_facing: int = Direction.RIGHT.value

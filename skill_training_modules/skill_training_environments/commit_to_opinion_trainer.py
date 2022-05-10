@@ -1,7 +1,5 @@
 import os
 import sys
-from tkinter import SW
-from typing import List
 import numpy as np
 import gym
 from gym import spaces
@@ -48,15 +46,18 @@ class CommitToOpinionTrainer(gym.Env):
         self.model = model
 
     def step(self, action):
-        agent_opinion = self.swarm_agents[
-            self.position_of_swarm_agent_to_train
-        ].calculate_opinion()
-
         for pos, agent in enumerate(self.swarm_agents):
-            if not agent.committed_to_opinion:
-                if pos == self.position_of_swarm_agent_to_train:
-                    agent.committed_to_opinion = action
+            if pos == self.position_of_swarm_agent_to_train:
+                agent.committed_to_opinion = action
+                if agent.committed_to_opinion:
+                    if agent.calculate_opinion() == self.correct_opinion:
+                        self.reward = 100
+                    else:
+                        self.reward = -200
                 else:
+                    self.reward = -0.05
+            else:
+                if not agent.committed_to_opinion:
                     if self.model:
                         agent.committed_to_opinion = self.model.predict(
                             agent.return_commit_decision_states()
@@ -64,37 +65,34 @@ class CommitToOpinionTrainer(gym.Env):
                     else:
                         agent.committed_to_opinion = random.randint(0, 1)
 
-                if agent.committed_to_opinion:
-                    self.committed_agents_count += 1
-
             agent.perform_decision_navigate_opinion_update_cycle(
                 tile_grid=self.tile_grid
             )
-
-        agent_is_committed_to_opinion = self.swarm_agents[
-            self.position_of_swarm_agent_to_train
-        ].committed_to_opinion
-
-        if agent_is_committed_to_opinion:
-            if agent_opinion == self.correct_opinion:
-                self.correct_commitment_count += 1
-                reward = 100
-            else:
-                reward = -200
-        else:
-            reward = -0.05
 
         self.num_steps += 1
 
         if (
             self.num_steps == self.max_num_steps
-            or self.committed_agents_count == self.num_of_swarm_agents
+            or self.swarm_agents[
+                self.position_of_swarm_agent_to_train
+            ].committed_to_opinion
         ):
             self.done = True
 
+            correct_commitment_count = 0
+
+            for agent in self.swarm_agents:
+                if (
+                    agent.committed_to_opinion
+                    and agent.calculate_opinion() == self.correct_opinion
+                ):
+                    correct_commitment_count += 1
+
             correct_commitment_ratio = (
-                self.correct_commitment_count / self.num_of_swarm_agents
+                correct_commitment_count / self.num_of_swarm_agents
             )
+
+            print("correct_commitment_ratio:", correct_commitment_ratio)
 
             self.environment_type_weighting[self.index_of_environment] = round(
                 inverse_sigmoid_for_weighting(correct_commitment_ratio * 100)
@@ -103,19 +101,15 @@ class CommitToOpinionTrainer(gym.Env):
             wandb.log(
                 {
                     "correct_commitment_ratio": correct_commitment_ratio,
-                    "steps taken": self.num_steps,
+                    "time taken": self.num_steps / 60,
                 }
             )
-
-        self.position_of_swarm_agent_to_train = random.randint(
-            0, self.num_of_swarm_agents - 1
-        )
 
         return (
             self.swarm_agents[
                 self.position_of_swarm_agent_to_train
-            ].return_sense_broadcast_states(),
-            reward,
+            ].return_commit_decision_states(),
+            self.reward,
             self.done,
             {},
         )
@@ -124,7 +118,6 @@ class CommitToOpinionTrainer(gym.Env):
         self.done = False
         self.num_steps = 0
         self.committed_agents_count = 0
-        self.correct_commitment_count = 0
 
         self.index_of_environment = random.choices(
             [0, 1, 2],
@@ -143,6 +136,8 @@ class CommitToOpinionTrainer(gym.Env):
         self.correct_opinion = round(
             return_ratio_of_white_to_black_tiles(self.tile_grid)
         )
+
+        print("correct_opinion:", self.correct_opinion)
 
         all_possible_tiles = []
 
@@ -165,4 +160,4 @@ class CommitToOpinionTrainer(gym.Env):
 
         return self.swarm_agents[
             self.position_of_swarm_agent_to_train
-        ].return_sense_broadcast_states()
+        ].return_commit_decision_states()

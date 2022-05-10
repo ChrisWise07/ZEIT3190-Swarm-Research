@@ -37,13 +37,10 @@ def train_skill_with_environment(args: argparse.Namespace) -> None:
 
     env = config["training_environment"](**config)
 
-    tensorboard_log_path = f"{LOGS_DIRECTORY}/{config['experiment_name']}_{run.id}"
-
     model = PPO(
         policy=config["policy_type"],
         env=env,
         verbose=config["verbose"],
-        tensorboard_log=tensorboard_log_path,
     )
 
     env.set_model(model)
