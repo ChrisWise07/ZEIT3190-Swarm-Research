@@ -29,10 +29,10 @@ class SwarmAgent:
     num_of_white_cells_observed: int = 0
     num_of_cells_observed: int = 0
     num_of_cycles_performed: int = 0
-    collective_opinion_weight: float = 0.9
     calculated_collective_opinion: float = 0.5
     communication_range: int = 1
     committed_to_opinion: int = 0
+    opinion_weights: List[float] = [0.5, 0.5]
     current_cell: Tuple[int, int] = field(init=False)
     cells_visited: Set[Tuple[int, int]] = field(init=False)
 
@@ -182,9 +182,10 @@ class SwarmAgent:
             return self.calculate_opinion()
 
     def update_calculated_collective_opinion(self, opinion: int) -> None:
+        opinion_weight = self.opinion_weights[opinion]
         self.calculated_collective_opinion = (
-            self.collective_opinion_weight * self.calculated_collective_opinion
-            + (1 - self.collective_opinion_weight) * opinion
+            opinion_weight * self.calculated_collective_opinion
+            + (1 - opinion_weight) * opinion
         )
 
     def recieve_local_opinions(self, tile_grid: np.ndarray):
@@ -205,7 +206,7 @@ class SwarmAgent:
         ]
 
         for tile in local_area.flat:
-            if tile["agent"]:
+            if tile["agent"] and tile["agent"] != self:
                 recieved_opinion = tile["agent"].return_opinion()
                 if recieved_opinion is not None:
                     self.update_calculated_collective_opinion(recieved_opinion)
@@ -240,6 +241,17 @@ class SwarmAgent:
                 opinion,
                 self.calculated_collective_opinion,
                 abs(self.calculated_collective_opinion - opinion),
+            ),
+            dtype=np.float32,
+        )
+
+    def return_opinion_weight_states(self) -> np.ndarray:
+        opinion = self.calculate_opinion()
+
+        return np.array(
+            (
+                opinion,
+                self.calculated_collective_opinion,
             ),
             dtype=np.float32,
         )

@@ -15,4 +15,11 @@ environment_type_list = [
 
 
 def inverse_sigmoid_for_weighting(broadcast_percentage: float) -> float:
-    return 100 / ((1 + np.exp(0.1 * (broadcast_percentage - 50))) + 0.00001)
+    return 100 / ((1 + np.exp(0.1 * (broadcast_percentage - 50))) + EPSILON)
+
+
+def sigmoid_for_weighting(broadcast_percentage: float) -> float:
+    return 100 / ((1 + np.exp(-0.1 * (broadcast_percentage - 50))) + EPSILON)
+
+
+EPSILON = 1e-6

@@ -18,7 +18,7 @@ from environment_agent_modules import (
 
 from .training_environment_utils import (
     environment_type_list,
-    inverse_sigmoid_for_weighting,
+    sigmoid_for_weighting,
     EPSILON,
 )
 
@@ -33,9 +33,9 @@ class CommitToOpinionTrainer(gym.Env):
         **kwargs,
     ):
         super(CommitToOpinionTrainer, self).__init__()
-        self.action_space = spaces.Discrete(2)
+        self.action_space = spaces.Box(low=0.0, high=0.99, shape=(2,), dtype=np.float32)
         self.observation_space = spaces.Box(
-            low=0.0, high=float(width * height), shape=(4,), dtype=np.float32
+            low=0.0, high=float(width * height), shape=(2,), dtype=np.float32
         )
         self.max_num_steps = max_num_of_steps
         self.width, self.height = width, height
@@ -47,26 +47,52 @@ class CommitToOpinionTrainer(gym.Env):
         self.model = model
 
     def calculate_reward(self, agent: SwarmAgent) -> int:
-        if not (agent.committed_to_opinion):
-            return -0.01 * agent.num_of_cycles_performed
-
-        if agent.calculate_opinion() != self.correct_opinion:
-            self.incorrect_commitments_count += 1
-            return -2000 / (agent.num_of_cycles_performed + EPSILON)
-
-        self.correct_commitments_count += 1
-        return 100 * agent.num_of_cycles_performed
+        correct_opinion_weighting = agent.opinion_weights[self.correct_opinion]
+        incorrect_opinion_weighting = agent.opinion_weights[
+            (self.correct_opinion + 1) % 2
+        ]
+        self.distance_from_correct_opinion_ideal_weighting = (
+            0.99 - correct_opinion_weighting
+        )
+        self.distance_from_incorrect_opinion_ideal_weighting = abs(
+            0.0 - incorrect_opinion_weighting
+        )
+        return (1 / (0.99 - correct_opinion_weighting) + EPSILON) - 100 * (
+            incorrect_opinion_weighting
+        )
 
     def step(self, action):
+        self.distance_from_correct_opinion_ideal_weighting = 0
+        self.distance_from_incorrect_opinion_ideal_weighting = 0
+
         for agent in self.swarm_agents:
-            if agent == self.agent_to_train:
-                agent.committed_to_opinion = action
+            if agent != self.agent_to_train:
+                agent.opinion_weights = self.model.predict(
+                    agent.return_opinion_weight_states()
+                )
+            else:
+                agent.opinion_weights = action
                 reward = self.calculate_reward(agent)
-                agent.committed_to_opinion = 0
 
             agent.perform_decision_navigate_opinion_update_cycle(
                 tile_grid=self.tile_grid
             )
+
+        wandb.log(
+            {
+                "distance_from_correct_opinion_ideal_weighting": np.mean(
+                    self.distance_from_correct_opinion_ideal_weighting
+                )
+            }
+        )
+
+        wandb.log(
+            {
+                "distance_from_incorrect_opinion_ideal_weighting": np.mean(
+                    self.distance_from_incorrect_opinion_ideal_weighting
+                )
+            }
+        )
 
         self.num_steps += 1
 
@@ -74,17 +100,17 @@ class CommitToOpinionTrainer(gym.Env):
             self.done = True
 
             self.environment_type_weighting[self.index_of_environment] = round(
-                inverse_sigmoid_for_weighting(
+                sigmoid_for_weighting(
                     (
-                        self.correct_commitments_count
-                        / (self.incorrect_commitments_count + EPSILON)
+                        self.distance_from_correct_opinion_ideal_weighting
+                        + self.distance_from_incorrect_opinion_ideal_weighting
                     )
                     * 100
                 )
             )
 
         return (
-            self.agent_to_train.return_commit_decision_states(),
+            self.agent_to_train.return_opinion_weight_states(),
             reward,
             self.done,
             {},
@@ -93,7 +119,6 @@ class CommitToOpinionTrainer(gym.Env):
     def reset(self):
         self.done = False
         self.num_steps = 0
-        self.committed_agents_count = 0
 
         self.index_of_environment = random.choices(
             [0, 1, 2],
@@ -127,9 +152,6 @@ class CommitToOpinionTrainer(gym.Env):
             )
             for _ in range(self.num_of_swarm_agents)
         ]
-
-        self.correct_commitments_count = 0
-        self.incorrect_commitments_count = 0
 
         self.agent_to_train = random.choice(self.swarm_agents)
 
