@@ -50,43 +50,48 @@ class SenseBroadcastTrainer(gym.Env):
     def set_model(self, model: PPO):
         self.model = model
 
+    def calculate_reward(self, agent: SwarmAgent) -> int:
+        if not agent.sensing:  # agent is broadcasting
+            if agent.calculate_opinion() != self.correct_opinion:
+                self.broadcast_false_positives += 1
+                return -(self.width * self.height) / (1 + agent.num_of_cells_observed)
+
+            self.broadcast_true_positives += 1
+            return agent.num_of_cells_observed
+
+        if agent.calculate_opinion() != self.correct_opinion:
+            self.broadcast_true_negatives += 1
+            return (self.width * self.height) / (1 + agent.num_of_cells_observed)
+
+        self.broadcast_false_negatives += 1
+        return -agent.num_of_cells_observed
+
+    def calculate_broadcast_accuracy(self) -> float:
+        return (self.broadcast_true_positives + self.broadcast_true_negatives) / (
+            self.broadcast_true_positives
+            + self.broadcast_false_positives
+            + self.broadcast_true_negatives
+            + self.broadcast_false_negatives
+        )
+
     def step(self, action):
-        for pos, agent in enumerate(self.swarm_agents):
-            if pos == self.position_of_swarm_agent_to_train:
-                agent.sensing = action
-                if agent.sensing:
-                    if agent.calculate_opinion() != self.correct_opinion:
-                        self.broadcast_true_negatives += 1
-                        self.reward = 1
-                    else:
-                        self.broadcast_false_negatives += 1
-                        self.reward = -1
-                else:  # agent is broadcasting
-                    if agent.calculate_opinion() == self.correct_opinion:
-                        self.broadcast_true_positives += 1
-                        self.reward = 1
-                    else:
-                        self.broadcast_false_positives += 1
-                        self.reward = -1
-            else:
+        for agent in self.swarm_agents:
+            if agent != self.agent_to_train:
                 agent.sensing = self.model.predict(
                     agent.return_sense_broadcast_states()
                 )[0].item()
+            else:
+                agent.sensing = action
+                self.reward = self.calculate_reward(agent)
 
             agent.navigate(tile_grid=self.tile_grid)
             agent.recieve_local_opinions(tile_grid=self.tile_grid)
 
+        broadcast_accuracy = self.calculate_broadcast_accuracy()
+
         wandb.log(
             {
-                "broadcast_accuracy": (
-                    self.broadcast_true_positives + self.broadcast_true_negatives
-                )
-                / (
-                    self.broadcast_true_positives
-                    + self.broadcast_false_negatives
-                    + self.broadcast_true_negatives
-                    + self.broadcast_false_positives
-                ),
+                "broadcast_accuracy": broadcast_accuracy,
                 "broadcast_true_positives": self.broadcast_true_positives,
                 "broadcast_false_positives": self.broadcast_false_positives,
                 "broadcast_true_negatives": self.broadcast_true_negatives,
@@ -98,22 +103,14 @@ class SenseBroadcastTrainer(gym.Env):
 
         if self.num_steps == self.max_num_steps:
             self.done = True
-            broadcast_accuracy = (
-                self.broadcast_true_positives + self.broadcast_true_negatives
-            ) / (
-                self.broadcast_true_positives
-                + self.broadcast_false_negatives
-                + self.broadcast_true_negatives
-                + self.broadcast_false_positives
-            )
             self.environment_type_weighting[self.index_of_environment] = round(
                 inverse_sigmoid_for_weighting(broadcast_accuracy * 100)
             )
 
+        # self.agent_to_train = random.choice(self.swarm_agents)
+
         return (
-            self.swarm_agents[
-                self.position_of_swarm_agent_to_train
-            ].return_sense_broadcast_states(),
+            self.agent_to_train.return_sense_broadcast_states(),
             self.reward,
             self.done,
             {},
@@ -160,10 +157,6 @@ class SenseBroadcastTrainer(gym.Env):
         self.broadcast_true_negatives = 0
         self.broadcast_false_negatives = 0
 
-        self.position_of_swarm_agent_to_train = random.randint(
-            0, self.num_of_swarm_agents - 1
-        )
+        self.agent_to_train = random.choice(self.swarm_agents)
 
-        return self.swarm_agents[
-            self.position_of_swarm_agent_to_train
-        ].return_sense_broadcast_states()
+        return self.agent_to_train.return_sense_broadcast_states()

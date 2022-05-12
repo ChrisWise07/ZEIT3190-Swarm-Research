@@ -72,7 +72,7 @@ class CellsPerMinuteEvaluator:
                 needs_models_loaded=True,
                 model_names={
                     "nav_model": self.eval_model_name,
-                    "sense_model": "sense_broadcast_model",
+                    "sense_model": "sense_broadcast_model_lesson_weighting",
                 },
             )
             for _ in range(self.num_of_swarm_agents)

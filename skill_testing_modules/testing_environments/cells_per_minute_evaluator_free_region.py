@@ -66,7 +66,7 @@ class CellsPerMinuteEvaluatorFreeRegion:
                 needs_models_loaded=True,
                 model_names={
                     "nav_model": self.eval_model_name,
-                    "sense_model": "sense_broadcast_model",
+                    "sense_model": "sense_broadcast_model_lesson_weighting",
                 },
             )
         else:

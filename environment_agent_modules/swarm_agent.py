@@ -18,7 +18,7 @@ from .swarm_agent_enums import (
 class SwarmAgent:
     starting_cell: InitVar[Dict[str, Any]]
     model_names: InitVar[Dict[str, str]] = {
-        "nav_model": "redone_single_agent_nav_redone",
+        "nav_model": "multi_agent_nav",
         "sense_model": "sense_broadcast_model_lesson_weighting",
     }
     needs_models_loaded: InitVar[bool] = False
@@ -205,7 +205,7 @@ class SwarmAgent:
         ]
 
         for tile in local_area.flat:
-            if tile["agent"] and tile["agent"] != self:
+            if tile["agent"]:
                 recieved_opinion = tile["agent"].return_opinion()
                 if recieved_opinion is not None:
                     self.update_calculated_collective_opinion(recieved_opinion)
@@ -254,6 +254,7 @@ class SwarmAgent:
             self.decide_to_sense_or_broadcast()
             self.navigate(tile_grid=tile_grid)
             self.recieve_local_opinions(tile_grid=tile_grid)
-        else:
-            self.sensing = 0
-            self.navigate(tile_grid=tile_grid)
+            return
+
+        self.sensing = 0
+        self.navigate(tile_grid=tile_grid)
