@@ -2,3 +2,4 @@ from .single_agent_navigation_trainer_env import SingleAgentNavigationTrainer
 from .multi_agent_navigation_trainer_env import MultiAgentNavigationTrainer
 from .sense_broadcast_trainer_env import SenseBroadcastTrainer
 from .commit_to_opinion_trainer import CommitToOpinionTrainer
+from .dynamic_opinion_weighting_trainer import DynamicOpinionWeightingTrainer

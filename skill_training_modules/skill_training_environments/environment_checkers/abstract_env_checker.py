@@ -16,6 +16,7 @@ from skill_training_modules import (
     MultiAgentNavigationTrainer,
     SenseBroadcastTrainer,
     CommitToOpinionTrainer,
+    DynamicOpinionWeightingTrainer,
 )
 
 from helper_files import TRAINED_MODELS_DIRECTORY
@@ -28,6 +29,7 @@ env_name_to_class_map = {
     "multi_agent_navigation": MultiAgentNavigationTrainer,
     "sense_broadcast": SenseBroadcastTrainer,
     "commit_to_opinion": CommitToOpinionTrainer,
+    "dynamic_opinion_weighting": DynamicOpinionWeightingTrainer,
 }
 
 

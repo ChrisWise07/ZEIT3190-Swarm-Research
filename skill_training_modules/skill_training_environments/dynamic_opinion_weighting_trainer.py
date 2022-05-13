@@ -23,7 +23,7 @@ from .training_environment_utils import (
 )
 
 
-class CommitToOpinionTrainer(gym.Env):
+class DynamicOpinionWeightingTrainer(gym.Env):
     def __init__(
         self,
         max_num_of_steps: int,
@@ -32,8 +32,8 @@ class CommitToOpinionTrainer(gym.Env):
         num_of_swarm_agents: int,
         **kwargs,
     ):
-        super(CommitToOpinionTrainer, self).__init__()
-        self.action_space = spaces.Box(low=0.0, high=0.99, shape=(2,), dtype=np.float32)
+        super(DynamicOpinionWeightingTrainer, self).__init__()
+        self.action_space = spaces.Box(low=-1, high=1, shape=(2,), dtype=np.float32)
         self.observation_space = spaces.Box(
             low=0.0, high=float(width * height), shape=(2,), dtype=np.float32
         )
@@ -67,11 +67,14 @@ class CommitToOpinionTrainer(gym.Env):
 
         for agent in self.swarm_agents:
             if agent != self.agent_to_train:
-                agent.opinion_weights = self.model.predict(
-                    agent.return_opinion_weight_states()
-                )
+                if self.model is None:
+                    agent.opinion_weights = [0.9, 0.9]
+                else:
+                    agent.opinion_weights = self.model.predict(
+                        agent.return_opinion_weight_states()
+                    )[0]
             else:
-                agent.opinion_weights = action
+                agent.opinion_weights = [abs(weight / 2) for weight in action]
                 reward = self.calculate_reward(agent)
 
             agent.perform_decision_navigate_opinion_update_cycle(
@@ -80,17 +83,13 @@ class CommitToOpinionTrainer(gym.Env):
 
         wandb.log(
             {
-                "distance_from_correct_opinion_ideal_weighting": np.mean(
-                    self.distance_from_correct_opinion_ideal_weighting
-                )
+                "distance_from_correct_opinion_ideal_weighting": self.distance_from_correct_opinion_ideal_weighting
             }
         )
 
         wandb.log(
             {
-                "distance_from_incorrect_opinion_ideal_weighting": np.mean(
-                    self.distance_from_incorrect_opinion_ideal_weighting
-                )
+                "distance_from_incorrect_opinion_ideal_weighting": self.distance_from_incorrect_opinion_ideal_weighting
             }
         )
 
@@ -105,9 +104,12 @@ class CommitToOpinionTrainer(gym.Env):
                         self.distance_from_correct_opinion_ideal_weighting
                         + self.distance_from_incorrect_opinion_ideal_weighting
                     )
-                    * 100
+                    / 2.0
                 )
+                * 100
             )
+
+        # self.agent_to_train = random.choice(self.swarm_agents)
 
         return (
             self.agent_to_train.return_opinion_weight_states(),
@@ -155,4 +157,4 @@ class CommitToOpinionTrainer(gym.Env):
 
         self.agent_to_train = random.choice(self.swarm_agents)
 
-        return self.agent_to_train.return_commit_decision_states()
+        return self.agent_to_train.return_opinion_weight_states()

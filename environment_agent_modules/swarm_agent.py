@@ -19,7 +19,7 @@ class SwarmAgent:
     starting_cell: InitVar[Dict[str, Any]]
     model_names: InitVar[Dict[str, str]] = {
         "nav_model": "multi_agent_nav",
-        "sense_model": "sense_broadcast_model_lesson_weighting",
+        "sense_model": "obvs_based_reward_follow_agent_sense_broad",
     }
     needs_models_loaded: InitVar[bool] = False
     current_direction_facing: int = Direction.RIGHT.value
@@ -32,7 +32,7 @@ class SwarmAgent:
     calculated_collective_opinion: float = 0.5
     communication_range: int = 1
     committed_to_opinion: int = 0
-    opinion_weights: List[float] = [0.5, 0.5]
+    opinion_weights: List[float] = field(default_factory=lambda: [0.9, 0.9])
     current_cell: Tuple[int, int] = field(init=False)
     cells_visited: Set[Tuple[int, int]] = field(init=False)
 
@@ -206,7 +206,7 @@ class SwarmAgent:
         ]
 
         for tile in local_area.flat:
-            if tile["agent"] and tile["agent"] != self:
+            if tile["agent"]:
                 recieved_opinion = tile["agent"].return_opinion()
                 if recieved_opinion is not None:
                     self.update_calculated_collective_opinion(recieved_opinion)

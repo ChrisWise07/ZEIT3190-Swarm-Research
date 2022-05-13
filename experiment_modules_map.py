@@ -9,6 +9,7 @@ from skill_training_modules import (
     MultiAgentNavigationTrainer,
     SenseBroadcastTrainer,
     CommitToOpinionTrainer,
+    DynamicOpinionWeightingTrainer,
 )
 
 experiment_modules_map = {
@@ -16,6 +17,7 @@ experiment_modules_map = {
     "multi_agent_navigation_trainer": MultiAgentNavigationTrainer,
     "sense_broadcast_trainer": SenseBroadcastTrainer,
     "commit_to_opinion_trainer": CommitToOpinionTrainer,
+    "dynamic_opinion_weight_trainer": DynamicOpinionWeightingTrainer,
     "cells_per_minute_evaluator": CellsPerMinuteEvaluator,
     "cells_per_minute_evaluator_free_region": CellsPerMinuteEvaluatorFreeRegion,
     "correct_sense_broadcast_evaluator": CorrectSenseBroadcastEvaluator,

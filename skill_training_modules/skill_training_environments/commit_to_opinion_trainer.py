@@ -18,6 +18,7 @@ from environment_agent_modules import (
 
 from .training_environment_utils import (
     environment_type_list,
+    sigmoid_for_weighting,
     inverse_sigmoid_for_weighting,
     EPSILON,
 )
@@ -48,14 +49,14 @@ class CommitToOpinionTrainer(gym.Env):
 
     def calculate_reward(self, agent: SwarmAgent) -> int:
         if not (agent.committed_to_opinion):
-            return -0.01 * agent.num_of_cycles_performed
+            return -agent.num_of_cycles_performed
 
         if agent.calculate_opinion() != self.correct_opinion:
             self.incorrect_commitments_count += 1
-            return -2000 / (agent.num_of_cycles_performed + EPSILON)
+            return -self.max_num_steps / (agent.num_of_cycles_performed + 1)
 
         self.correct_commitments_count += 1
-        return 100 * agent.num_of_cycles_performed
+        return agent.num_of_cycles_performed
 
     def step(self, action):
         for agent in self.swarm_agents:
@@ -74,13 +75,15 @@ class CommitToOpinionTrainer(gym.Env):
             self.done = True
 
             self.environment_type_weighting[self.index_of_environment] = round(
-                inverse_sigmoid_for_weighting(
-                    (
-                        self.correct_commitments_count
-                        / (self.incorrect_commitments_count + EPSILON)
+                (
+                    inverse_sigmoid_for_weighting(
+                        (self.correct_commitments_count / self.max_num_steps) * 100
                     )
-                    * 100
+                    + sigmoid_for_weighting(
+                        (self.incorrect_commitments_count / self.max_num_steps) * 100
+                    )
                 )
+                / 2
             )
 
         return (
