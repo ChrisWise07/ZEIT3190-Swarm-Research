@@ -74,6 +74,13 @@ class CommitToOpinionTrainer(gym.Env):
         if self.num_steps == self.max_num_steps:
             self.done = True
 
+            wandb.log(
+                {
+                    "correct_commitment_count": self.correct_commitments_count,
+                    "incorrect_commitment_count": self.incorrect_commitments_count,
+                }
+            )
+
             self.environment_type_weighting[self.index_of_environment] = round(
                 (
                     inverse_sigmoid_for_weighting(

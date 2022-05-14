@@ -19,6 +19,7 @@ from environment_agent_modules import (
 from .training_environment_utils import (
     environment_type_list,
     sigmoid_for_weighting,
+    inverse_sigmoid_for_weighting,
     EPSILON,
 )
 
@@ -47,24 +48,15 @@ class DynamicOpinionWeightingTrainer(gym.Env):
         self.model = model
 
     def calculate_reward(self, agent: SwarmAgent) -> int:
-        correct_opinion_weighting = agent.opinion_weights[self.correct_opinion]
-        incorrect_opinion_weighting = agent.opinion_weights[
+        self.correct_opinion_weighting = agent.opinion_weights[self.correct_opinion]
+        self.incorrect_opinion_weighting = agent.opinion_weights[
             (self.correct_opinion + 1) % 2
         ]
-        self.distance_from_correct_opinion_ideal_weighting = (
-            0.99 - correct_opinion_weighting
-        )
-        self.distance_from_incorrect_opinion_ideal_weighting = abs(
-            0.0 - incorrect_opinion_weighting
-        )
-        return (1 / (0.99 - correct_opinion_weighting) + EPSILON) - 100 * (
-            incorrect_opinion_weighting
+        return (1 / ((0.99 - self.correct_opinion_weighting) + EPSILON)) - 100 * (
+            self.incorrect_opinion_weighting
         )
 
     def step(self, action):
-        self.distance_from_correct_opinion_ideal_weighting = 0
-        self.distance_from_incorrect_opinion_ideal_weighting = 0
-
         for agent in self.swarm_agents:
             if agent != self.agent_to_train:
                 if self.model is None:
@@ -83,13 +75,8 @@ class DynamicOpinionWeightingTrainer(gym.Env):
 
         wandb.log(
             {
-                "distance_from_correct_opinion_ideal_weighting": self.distance_from_correct_opinion_ideal_weighting
-            }
-        )
-
-        wandb.log(
-            {
-                "distance_from_incorrect_opinion_ideal_weighting": self.distance_from_incorrect_opinion_ideal_weighting
+                "correct_opinion_weighting": self.correct_opinion_weighting,
+                "incorrect_opinion_weighting": self.incorrect_opinion_weighting,
             }
         )
 
@@ -99,14 +86,11 @@ class DynamicOpinionWeightingTrainer(gym.Env):
             self.done = True
 
             self.environment_type_weighting[self.index_of_environment] = round(
-                sigmoid_for_weighting(
-                    (
-                        self.distance_from_correct_opinion_ideal_weighting
-                        + self.distance_from_incorrect_opinion_ideal_weighting
-                    )
-                    / 2.0
+                (
+                    inverse_sigmoid_for_weighting(self.correct_opinion_weighting * 100)
+                    + sigmoid_for_weighting(self.incorrect_opinion_weighting * 100)
                 )
-                * 100
+                / 2
             )
 
         # self.agent_to_train = random.choice(self.swarm_agents)

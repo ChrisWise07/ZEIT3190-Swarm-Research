@@ -65,15 +65,10 @@ class MultiAgentNavigationTrainer(gym.Env):
                 {
                     "average_num_of_new_cells_visited_in_minute": np.mean(
                         self.num_of_cells_visited_by_agent_in_minute
-                    )
-                }
-            )
-
-            wandb.log(
-                {
+                    ),
                     "average_total_num_of_cells_visited": np.mean(
                         self.num_of_cells_visited_by_agent
-                    )
+                    ),
                 }
             )
 
