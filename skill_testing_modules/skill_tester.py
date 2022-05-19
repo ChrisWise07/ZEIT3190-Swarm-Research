@@ -27,7 +27,8 @@ def test_skill_with_environment(args: argparse.Namespace) -> None:
 
     for _ in range(config["num_episodes"]):
         env.reset()
-        for step_num in range(int(config["max_num_of_steps"])):
-            env.step(step_num)
+        for _ in range(int(config["max_num_of_steps"])):
+            if env.step():
+                break
 
     run.finish()

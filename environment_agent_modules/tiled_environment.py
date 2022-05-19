@@ -113,21 +113,43 @@ def clustered_environment(
     return tile_grid
 
 
+def return_majority_minority_tile_colour(
+    ratio_of_white_to_black_tiles: float,
+) -> Tuple[TileColour, TileColour]:
+    return TileColour(round(ratio_of_white_to_black_tiles)), TileColour(
+        (round(ratio_of_white_to_black_tiles) + 1) % 2
+    )
+
+
+def return_ratio_of_majority_to_minority_tiles(
+    majority_tile_colour: TileColour, ratio_of_white_to_black_tiles: float
+) -> float:
+    if majority_tile_colour != TileColour.WHITE:
+        return 1 - ratio_of_white_to_black_tiles
+    return ratio_of_white_to_black_tiles
+
+
 def create_clustered_inital_observation_useful_tile_grid(
     width: int,
     height: int,
     ratio_of_white_to_black_tiles: float = 0.5,
 ) -> np.ndarray:
+    majority_tile_colour, minority_tile_colour = return_majority_minority_tile_colour(
+        ratio_of_white_to_black_tiles
+    )
+
     return clustered_environment(
         width=width,
         height=height,
-        ratio_of_inital_to_non_inital_tile=ratio_of_white_to_black_tiles,
+        ratio_of_inital_to_non_inital_tile=return_ratio_of_majority_to_minority_tiles(
+            majority_tile_colour, ratio_of_white_to_black_tiles
+        ),
         tile_grid=np.empty((height, width), dtype=object),
         tile_walls_to_coordinates_map=return_coordinate_to_walls_dict(
             width=width, height=height
         ),
-        intial_tile_colour=TileColour.WHITE.value,
-        non_intial_tile_colour=TileColour.BLACK.value,
+        intial_tile_colour=majority_tile_colour.value,
+        non_intial_tile_colour=minority_tile_colour.value,
     )
 
 
@@ -136,16 +158,24 @@ def create_clustered_inital_observation_not_useful_tile_grid(
     height: int,
     ratio_of_white_to_black_tiles: float = 0.5,
 ) -> np.ndarray:
+    majority_tile_colour, minority_tile_colour = return_majority_minority_tile_colour(
+        ratio_of_white_to_black_tiles
+    )
     return clustered_environment(
         width=width,
         height=height,
-        ratio_of_inital_to_non_inital_tile=(1 - ratio_of_white_to_black_tiles),
+        ratio_of_inital_to_non_inital_tile=(
+            1
+            - return_ratio_of_majority_to_minority_tiles(
+                majority_tile_colour, ratio_of_white_to_black_tiles
+            )
+        ),
         tile_grid=np.empty((height, width), dtype=object),
         tile_walls_to_coordinates_map=return_coordinate_to_walls_dict(
             width=width, height=height
         ),
-        intial_tile_colour=TileColour.BLACK.value,
-        non_intial_tile_colour=TileColour.WHITE.value,
+        intial_tile_colour=minority_tile_colour.value,
+        non_intial_tile_colour=majority_tile_colour.value,
     )
 
 

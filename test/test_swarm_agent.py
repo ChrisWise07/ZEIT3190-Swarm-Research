@@ -18,10 +18,14 @@ class swarm_agent_tester(unittest.TestCase):
     def setUp(self) -> None:
         self.tiled_enviro = create_nonclustered_tile_grid(height=5, width=5)
         self.clusted_enviro_obs_useful = (
-            create_clustered_inital_observation_useful_tile_grid(width=5, height=5)
+            create_clustered_inital_observation_useful_tile_grid(
+                width=5, height=5, ratio_of_white_to_black_tiles=0.52
+            )
         )
         self.clusted_enviro_obs_not_useful = (
-            create_clustered_inital_observation_not_useful_tile_grid(width=5, height=5)
+            create_clustered_inital_observation_not_useful_tile_grid(
+                width=5, height=5, ratio_of_white_to_black_tiles=0.52
+            )
         )
         self.swarm_agent = SwarmAgent(starting_cell=self.tiled_enviro[(0, 0)])
 
@@ -85,7 +89,7 @@ class swarm_agent_tester(unittest.TestCase):
         self.swarm_agent.occupy_cell(self.tiled_enviro[(1, 0)])
         self.assertEqual(
             self.swarm_agent.return_navigation_reward(),
-            1,
+            2,
             "postive reward not returning correctly",
         )
 
@@ -146,7 +150,7 @@ class swarm_agent_tester(unittest.TestCase):
             )
             self.assertEqual(
                 self.swarm_agent.return_navigation_reward(),
-                1,
+                2,
                 "correct reward not returning after succesful step forward",
             )
 
@@ -796,7 +800,7 @@ class swarm_agent_tester(unittest.TestCase):
         )
 
         bottom_right_swarm_agent = SwarmAgent(
-            starting_cell=self.tiled_enviro[(4, 4)], sensing=0
+            starting_cell=self.tiled_enviro[(4, 4)], sensing=1
         )
 
         other_swarm_agent = SwarmAgent(

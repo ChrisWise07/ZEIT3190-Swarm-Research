@@ -31,25 +31,27 @@ class CommitToOpinionTrainer(gym.Env):
         width: int,
         height: int,
         num_of_swarm_agents: int,
+        random_agent_per_step: bool,
         **kwargs,
     ):
         super(CommitToOpinionTrainer, self).__init__()
         self.action_space = spaces.Discrete(2)
         self.observation_space = spaces.Box(
-            low=0.0, high=float(width * height), shape=(4,), dtype=np.float32
+            low=0.0, high=float(max_num_of_steps), shape=(4,), dtype=np.float32
         )
         self.max_num_steps = max_num_of_steps
         self.width, self.height = width, height
         self.num_of_swarm_agents = num_of_swarm_agents
         self.environment_type_weighting = [33, 33, 33]
         self.model = None
+        self.random_agent_per_step = random_agent_per_step
 
     def set_model(self, model: PPO):
         self.model = model
 
     def calculate_reward(self, agent: SwarmAgent) -> int:
         if not (agent.committed_to_opinion):
-            return -agent.num_of_cycles_performed
+            return -0.5
 
         if agent.calculate_opinion() != self.correct_opinion:
             self.incorrect_commitments_count += 1
@@ -93,6 +95,9 @@ class CommitToOpinionTrainer(gym.Env):
                 / 2
             )
 
+        if self.random_agent_per_step:
+            self.agent_to_train = random.choice(self.swarm_agents)
+
         return (
             self.agent_to_train.return_commit_decision_states(),
             reward,
@@ -125,9 +130,9 @@ class CommitToOpinionTrainer(gym.Env):
 
         all_possible_tiles = []
 
-        for column in range(self.width):
-            for row in range(self.height):
-                all_possible_tiles.append((column, row))
+        for column in range(20):
+            for row in range(20):
+                all_possible_tiles.append((row, column))
 
         self.swarm_agents = [
             SwarmAgent(

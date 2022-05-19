@@ -29,6 +29,7 @@ class SenseBroadcastTrainer(gym.Env):
         width: int,
         height: int,
         num_of_swarm_agents: int,
+        random_agent_per_step: bool,
         **kwargs,
     ):
         super(SenseBroadcastTrainer, self).__init__()
@@ -40,12 +41,7 @@ class SenseBroadcastTrainer(gym.Env):
         self.width, self.height = width, height
         self.num_of_swarm_agents = num_of_swarm_agents
         self.environment_type_weighting = [33, 33, 33]
-        (
-            self.previous_true_positives,
-            self.previous_false_positives,
-            self.previous_true_negatives,
-            self.previous_false_negatives,
-        ) = (0, 0, 0, 0)
+        self.random_agent_per_step = random_agent_per_step
 
     def set_model(self, model: PPO):
         self.model = model
@@ -54,14 +50,16 @@ class SenseBroadcastTrainer(gym.Env):
         if not agent.sensing:  # agent is broadcasting
             if agent.calculate_opinion() != self.correct_opinion:
                 self.broadcast_false_positives += 1
-                return -(self.width * self.height) / (1 + agent.num_of_cells_observed)
+                return -10 * (
+                    (self.width * self.height) / (1 + agent.num_of_cells_observed)
+                )
 
             self.broadcast_true_positives += 1
             return agent.num_of_cells_observed
 
         if agent.calculate_opinion() != self.correct_opinion:
             self.broadcast_true_negatives += 1
-            return (self.width * self.height) / (1 + agent.num_of_cells_observed)
+            return 10 * ((self.width * self.height) / (1 + agent.num_of_cells_observed))
 
         self.broadcast_false_negatives += 1
         return -agent.num_of_cells_observed
@@ -82,7 +80,7 @@ class SenseBroadcastTrainer(gym.Env):
                 )[0].item()
             else:
                 agent.sensing = action
-                self.reward = self.calculate_reward(agent)
+                reward = self.calculate_reward(agent)
 
             agent.navigate(tile_grid=self.tile_grid)
             agent.recieve_local_opinions(tile_grid=self.tile_grid)
@@ -107,11 +105,12 @@ class SenseBroadcastTrainer(gym.Env):
                 inverse_sigmoid_for_weighting(broadcast_accuracy * 100)
             )
 
-        # self.agent_to_train = random.choice(self.swarm_agents)
+        if self.random_agent_per_step:
+            self.agent_to_train = random.choice(self.swarm_agents)
 
         return (
             self.agent_to_train.return_sense_broadcast_states(),
-            self.reward,
+            reward,
             self.done,
             {},
         )
@@ -139,9 +138,9 @@ class SenseBroadcastTrainer(gym.Env):
 
         all_possible_tiles = []
 
-        for column in range(self.width):
-            for row in range(self.height):
-                all_possible_tiles.append((column, row))
+        for column in range(20):
+            for row in range(20):
+                all_possible_tiles.append((row, column))
 
         self.swarm_agents = [
             SwarmAgent(

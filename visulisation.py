@@ -4,15 +4,19 @@ import numpy as np
 import tkinter as tk
 from environment_agent_modules import (
     create_nonclustered_tile_grid,
+    create_clustered_inital_observation_not_useful_tile_grid,
+    create_clustered_inital_observation_useful_tile_grid,
     SwarmAgent,
     Direction,
+    TileColour,
 )
+import random
 
 TILE_SIZE = 25
 MID_POINT_OFFSET = round(TILE_SIZE / 2)
 root = tk.Tk()
 SCREEN_MID_POINT = (
-    round(root.winfo_screenwidth() / 4),
+    round(root.winfo_screenwidth() / 2),
     round(root.winfo_screenheight() / 2),
 )
 
@@ -29,7 +33,7 @@ def setup_tile_grid_for_display(tile_grid: np.ndarray) -> np.ndarray:
 
     for row in range(tile_grid.shape[0]):
         for col in range(tile_grid.shape[1]):
-            if not (tile_grid[row, col]["colour"]):
+            if TileColour(tile_grid[row, col]["colour"]) == TileColour.WHITE:
                 display_grid[
                     row * TILE_SIZE : row * TILE_SIZE + TILE_SIZE,
                     col * TILE_SIZE : col * TILE_SIZE + TILE_SIZE,
@@ -65,6 +69,18 @@ def map_swarm_agent_direction_position_to_display_tile_grid_arrow_coordinates(
     }[agent_direction](*agent_position)
 
 
+def return_arrow_colour_based_on_agent_state(
+    swarm_agent: SwarmAgent,
+) -> Tuple[int, int, int]:
+    if not (swarm_agent.committed_to_opinion):
+        if not (swarm_agent.sensing):
+            return (0, 0, 255)
+
+        return (0, 255, 0)
+
+    return (255, 0, 0)
+
+
 def draw_swarm_agent_on_tile_grid(
     display_tile_grid: np.ndarray,
     swarm_agent: SwarmAgent,
@@ -81,8 +97,8 @@ def draw_swarm_agent_on_tile_grid(
         display_tile_grid,
         start_point,
         end_point,
-        (0, 0, 255),
-        1,
+        return_arrow_colour_based_on_agent_state(swarm_agent),
+        2,
         tipLength=0.4,
     )
 
@@ -91,27 +107,38 @@ def move_and_show_window(x: int, y: int, winname: str, img: np.ndarray) -> None:
     cv2.namedWindow(winname)
     cv2.moveWindow(winname, x, y)
     cv2.imshow(winname, img)
-    cv2.waitKey(400)
+    cv2.waitKey(0)
 
 
 def main() -> None:
-    tile_grid = create_nonclustered_tile_grid(20, 20)
+    tile_grid = create_nonclustered_tile_grid(20, 20, ratio_of_white_to_black_tiles=0.6)
+
+    all_possible_tiles = []
+
+    for column in range(20):
+        for row in range(20):
+            all_possible_tiles.append((row, column))
+
     swarm_agents = [
-        SwarmAgent(starting_cell=tile_grid[i, i], needs_models_loaded=True)
-        for i in range(20)
+        SwarmAgent(
+            starting_cell=(tile_grid[all_possible_tiles.pop(0)]),
+            current_direction_facing=random.randint(0, 3),
+            needs_models_loaded=True,
+        )
+        for _ in range(20)
     ]
 
     display_location = (
-        round(SCREEN_MID_POINT[0] - (tile_grid.shape[1] * TILE_SIZE / 4)),
-        round(SCREEN_MID_POINT[1] - (tile_grid.shape[0] * TILE_SIZE / 8)),
+        round(SCREEN_MID_POINT[0] - (tile_grid.shape[1] * TILE_SIZE / 2)),
+        round(SCREEN_MID_POINT[1] - (tile_grid.shape[0] * TILE_SIZE / 1.5)),
     )
 
-    for i in range(100):
+    for i in range(50):
         img = setup_tile_grid_for_display(tile_grid)
 
         for agent in swarm_agents:
-            agent.navigate(tile_grid=tile_grid)
             draw_swarm_agent_on_tile_grid(img, agent)
+            agent.perform_decision_navigate_opinion_update_cycle(tile_grid=tile_grid)
 
         move_and_show_window(*display_location, winname="Tile Grid", img=img)
 

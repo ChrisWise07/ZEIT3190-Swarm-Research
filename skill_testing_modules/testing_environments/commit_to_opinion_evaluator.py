@@ -15,7 +15,7 @@ from environment_agent_modules import (
 from .testing_utils import environment_type_map
 
 
-class CorrectSenseBroadcastEvaluator:
+class CommitToOpinionEvaluator:
     def __init__(
         self,
         width: int,
@@ -35,51 +35,30 @@ class CorrectSenseBroadcastEvaluator:
         self.eval_model_name = eval_model_name
 
     def step(self):
-        (
-            broadcast_true_positves,
-            broadcast_false_positves,
-            broadcast_true_negatives,
-            broadcast_false_negatives,
-        ) = (0, 0, 0, 0)
-
+        self.total_num_of_steps += 1
         for agent in self.swarm_agents:
-            agent_opinion = agent.calculate_opinion()
-            agent.decide_to_sense_or_broadcast()
-            agent.navigate(self.tile_grid)
-            agent.recieve_local_opinions(self.tile_grid)
+            agent.perform_decision_navigate_opinion_update_cycle(
+                tile_grid=self.tile_grid
+            )
+            if agent.committed_to_opinion:
+                self.agents_committed += 1
 
-            if not (agent.sensing):  # broadcasting
-                if agent_opinion != self.correct_opinion:
-                    broadcast_false_positves += 1
-                    continue
+        if self.agents_committed == self.num_of_swarm_agents:
+            correct_commitments_count = 0
 
-                broadcast_true_positves += 1
-                continue
+            for agent in self.swarm_agents:
+                if agent.calculate_opinion() == self.correct_opinion:
+                    correct_commitments_count += 1
 
-            if agent_opinion != self.correct_opinion:
-                broadcast_true_negatives += 1
-                continue
-
-            broadcast_false_negatives += 1
-            continue
-
-        wandb.log(
-            {
-                "broadcast_accuracy": (
-                    broadcast_true_positves + broadcast_true_negatives
-                )
-                / (
-                    broadcast_true_positves
-                    + broadcast_false_negatives
-                    + broadcast_true_negatives
-                    + broadcast_false_positves
-                ),
-                "broadcast_true_positives": broadcast_true_positves,
-                "broadcast_false_positives": broadcast_false_positves,
-                "broadcast_true_negatives": broadcast_true_negatives,
-                "broadcast_false_negatives": broadcast_false_negatives,
-            }
-        )
+            wandb.log(
+                {
+                    "time_taken": self.total_num_of_steps / 60,
+                    "percentage_of_correctly_commited_agents": (
+                        correct_commitments_count / self.num_of_swarm_agents
+                    ),
+                }
+            )
+            return True
 
     def reset(self):
         self.tile_grid = self.environment_type(
@@ -92,6 +71,8 @@ class CorrectSenseBroadcastEvaluator:
             return_ratio_of_white_to_black_tiles(self.tile_grid)
         )
 
+        self.total_num_of_steps = 0
+
         all_possible_tiles = []
 
         for column in range(20):
@@ -103,11 +84,15 @@ class CorrectSenseBroadcastEvaluator:
                 starting_cell=(self.tile_grid[all_possible_tiles.pop(0)]),
                 model_names={
                     "nav_model": "multi_agent_nav",
-                    "sense_model": self.eval_model_name,
-                    "commit_to_opinion_model": "commit_to_opinion_model",
+                    "sense_model": "obvs_based_reward_follow_agent_sense_broad",
+                    "commit_to_opinion_model": self.eval_model_name,
                 },
                 current_direction_facing=1,
                 needs_models_loaded=True,
             )
             for _ in range(self.num_of_swarm_agents)
         ]
+
+        self.agents_committed = 0
+        self.time_taken = 0
+        self.percentage_with_correct_opinions = 0.0

@@ -20,6 +20,7 @@ class SwarmAgent:
     model_names: InitVar[Dict[str, str]] = {
         "nav_model": "multi_agent_nav",
         "sense_model": "obvs_based_reward_follow_agent_sense_broad",
+        "commit_to_opinion_model": "test_commitment",
     }
     needs_models_loaded: InitVar[bool] = False
     current_direction_facing: int = Direction.RIGHT.value
@@ -52,6 +53,10 @@ class SwarmAgent:
 
             self.sense_broadcast_model = PPO.load(
                 f"{TRAINED_MODELS_DIRECTORY}/{model_names.get('sense_model')}"
+            )
+
+            self.commit_to_opinion_model = PPO.load(
+                f"{TRAINED_MODELS_DIRECTORY}/{model_names.get('commit_to_opinion_model')}"
             )
 
         if not (self.occupy_cell(starting_cell)):
@@ -250,22 +255,33 @@ class SwarmAgent:
 
         return np.array(
             (
-                opinion,
-                self.calculated_collective_opinion,
+                opinion,  # 0
+                self.calculated_collective_opinion,  # 0
+                (1 - opinion),  # 1
+                (1 - self.calculated_collective_opinion),  # 1
             ),
             dtype=np.float32,
         )
 
+    def choose_commit_decision_action(self) -> int:
+        return self.commit_to_opinion_model.predict(
+            self.return_commit_decision_states()
+        )[0].item()
+
+    def decide_if_to_commit(self) -> None:
+        if not self.committed_to_opinion:
+            self.committed_to_opinion = self.choose_commit_decision_action()
+        return self.committed_to_opinion
+
     def perform_decision_navigate_opinion_update_cycle(
         self, tile_grid: np.ndarray
     ) -> None:
-        self.num_of_cycles_performed += 1
-        # decide if done add here
 
-        if not (self.committed_to_opinion):
+        if not (self.decide_if_to_commit()):
             self.decide_to_sense_or_broadcast()
             self.navigate(tile_grid=tile_grid)
             self.recieve_local_opinions(tile_grid=tile_grid)
+            self.num_of_cycles_performed += 1
             return
 
         self.sensing = 0

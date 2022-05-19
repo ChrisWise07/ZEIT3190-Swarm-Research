@@ -3,6 +3,7 @@ from skill_testing_modules import (
     CellsPerMinuteEvaluatorFreeRegion,
     CorrectSenseBroadcastEvaluator,
     RandomActionCorrectSenseBroadcastEvaluator,
+    CommitToOpinionEvaluator,
 )
 from skill_training_modules import (
     SingleAgentNavigationTrainer,
@@ -22,4 +23,5 @@ experiment_modules_map = {
     "cells_per_minute_evaluator_free_region": CellsPerMinuteEvaluatorFreeRegion,
     "correct_sense_broadcast_evaluator": CorrectSenseBroadcastEvaluator,
     "random_action_correct_sense_broadcast_evaluator": RandomActionCorrectSenseBroadcastEvaluator,
+    "commit_to_opinion_evaluator": CommitToOpinionEvaluator,
 }

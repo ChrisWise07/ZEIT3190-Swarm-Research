@@ -31,17 +31,19 @@ class DynamicOpinionWeightingTrainer(gym.Env):
         width: int,
         height: int,
         num_of_swarm_agents: int,
+        random_agent_per_step: bool,
         **kwargs,
     ):
         super(DynamicOpinionWeightingTrainer, self).__init__()
         self.action_space = spaces.Box(low=-1, high=1, shape=(2,), dtype=np.float32)
         self.observation_space = spaces.Box(
-            low=0.0, high=float(width * height), shape=(2,), dtype=np.float32
+            low=0.0, high=1.0, shape=(4,), dtype=np.float32
         )
         self.max_num_steps = max_num_of_steps
         self.width, self.height = width, height
         self.num_of_swarm_agents = num_of_swarm_agents
         self.environment_type_weighting = [33, 33, 33]
+        self.random_agent_per_step = random_agent_per_step
         self.model = None
 
     def set_model(self, model: PPO):
@@ -52,8 +54,8 @@ class DynamicOpinionWeightingTrainer(gym.Env):
         self.incorrect_opinion_weighting = agent.opinion_weights[
             (self.correct_opinion + 1) % 2
         ]
-        return (1 / ((0.99 - self.correct_opinion_weighting) + EPSILON)) - 100 * (
-            self.incorrect_opinion_weighting
+        return (1 / (1.01 - self.correct_opinion_weighting)) - (
+            100 * self.incorrect_opinion_weighting
         )
 
     def step(self, action):
@@ -64,9 +66,9 @@ class DynamicOpinionWeightingTrainer(gym.Env):
                 else:
                     agent.opinion_weights = self.model.predict(
                         agent.return_opinion_weight_states()
-                    )[0]
+                    )[0] 
             else:
-                agent.opinion_weights = [abs(weight / 2) for weight in action]
+                agent.opinion_weights = [((weight + 1) / 2) for weight in action] #[0.0 - 1.0, 0.0 - 1.0]
                 reward = self.calculate_reward(agent)
 
             agent.perform_decision_navigate_opinion_update_cycle(
@@ -93,7 +95,8 @@ class DynamicOpinionWeightingTrainer(gym.Env):
                 / 2
             )
 
-        # self.agent_to_train = random.choice(self.swarm_agents)
+        if self.random_agent_per_step:
+            self.agent_to_train = random.choice(self.swarm_agents)
 
         return (
             self.agent_to_train.return_opinion_weight_states(),
@@ -126,9 +129,9 @@ class DynamicOpinionWeightingTrainer(gym.Env):
 
         all_possible_tiles = []
 
-        for column in range(self.width):
-            for row in range(self.height):
-                all_possible_tiles.append((column, row))
+        for column in range(20):
+            for row in range(20):
+                all_possible_tiles.append((row, column))
 
         self.swarm_agents = [
             SwarmAgent(

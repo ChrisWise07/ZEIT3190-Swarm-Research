@@ -134,7 +134,12 @@ parser.add_argument(
     default=None,
     help=("Name of model to evaluate (default=None)"),
 )
-
+parser.add_argument(
+    "--random_agent_per_step",
+    type=bool,
+    default=False,
+    help=("Control if random agent is selected each step (default=None)"),
+)
 args = parser.parse_args()
 
 if not (args.max_num_of_steps):

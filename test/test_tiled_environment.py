@@ -283,7 +283,7 @@ class tiled_environment_tester(unittest.TestCase):
         new_tiled_environment = create_clustered_inital_observation_useful_tile_grid(
             height=5,
             width=5,
-            ratio_of_white_to_black_tiles=0.5,
+            ratio_of_white_to_black_tiles=0.51,
         )
 
         self.clustered_initial_observations_tester(
@@ -292,7 +292,7 @@ class tiled_environment_tester(unittest.TestCase):
             width=5,
             initial_tile_colour=TileColour.WHITE,
             non_initial_tile_colour=TileColour.BLACK,
-            initial_tiles_row_limit=2,
+            initial_tiles_row_limit=3,
             initial_tiles_column_limit=2,
         )
 
@@ -301,7 +301,7 @@ class tiled_environment_tester(unittest.TestCase):
             create_clustered_inital_observation_not_useful_tile_grid(
                 height=5,
                 width=5,
-                ratio_of_white_to_black_tiles=0.5,
+                ratio_of_white_to_black_tiles=0.51,
             )
         )
 
