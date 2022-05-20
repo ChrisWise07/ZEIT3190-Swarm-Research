@@ -1,9 +1,7 @@
 import sys
 import os
-import wandb
 from typing import Dict
-from stable_baselines3.common.env_checker import check_env
-from stable_baselines3 import PPO
+import wandb
 
 root_dir = os.path.dirname(os.path.realpath(__file__))
 
@@ -34,6 +32,9 @@ env_name_to_class_map = {
 
 
 def generic_env_check(env_name: str, env_configs: Dict[str, int]):
+    from stable_baselines3 import PPO
+    from stable_baselines3.common.env_checker import check_env
+
     wandb.init(mode="disabled")
 
     env = env_name_to_class_map[env_name](**env_configs)

@@ -2,7 +2,6 @@ import os
 import sys
 import numpy as np
 import gym
-from gym import spaces
 import wandb
 import random
 
@@ -14,6 +13,8 @@ from environment_agent_modules import create_nonclustered_tile_grid, SwarmAgent
 
 class SingleAgentNavigationTrainer(gym.Env):
     def __init__(self, max_num_of_steps: int, width: int, height: int, **kwargs):
+        from gym import spaces
+
         super(SingleAgentNavigationTrainer, self).__init__()
         self.action_space = spaces.Discrete(3)
         self.observation_space = spaces.Box(low=0, high=4, shape=(2,), dtype=int)

@@ -20,7 +20,7 @@ class SwarmAgent:
     model_names: InitVar[Dict[str, str]] = {
         "nav_model": "multi_agent_nav",
         "sense_model": "obvs_based_reward_follow_agent_sense_broad",
-        "commit_to_opinion_model": "test_commitment",
+        "commit_to_opinion_model": "commit_to_opinion_model",
     }
     needs_models_loaded: InitVar[bool] = False
     current_direction_facing: int = Direction.RIGHT.value
@@ -33,7 +33,7 @@ class SwarmAgent:
     calculated_collective_opinion: float = 0.5
     communication_range: int = 1
     committed_to_opinion: int = 0
-    opinion_weights: List[float] = field(default_factory=lambda: [0.9, 0.9])
+    new_opinion_weights: List[float] = field(default_factory=lambda: [0.1, 0.1])
     current_cell: Tuple[int, int] = field(init=False)
     cells_visited: Set[Tuple[int, int]] = field(init=False)
 
@@ -187,11 +187,10 @@ class SwarmAgent:
             return self.calculate_opinion()
 
     def update_calculated_collective_opinion(self, opinion: int) -> None:
-        opinion_weight = self.opinion_weights[opinion]
+        opinion_weight = self.new_opinion_weights[opinion]
         self.calculated_collective_opinion = (
-            opinion_weight * self.calculated_collective_opinion
-            + (1 - opinion_weight) * opinion
-        )
+            (1 - opinion_weight) * self.calculated_collective_opinion
+        ) + (opinion_weight * opinion)
 
     def recieve_local_opinions(self, tile_grid: np.ndarray):
         current_y, current_x = self.current_cell
@@ -255,10 +254,8 @@ class SwarmAgent:
 
         return np.array(
             (
-                opinion,  # 0
-                self.calculated_collective_opinion,  # 0
-                (1 - opinion),  # 1
-                (1 - self.calculated_collective_opinion),  # 1
+                opinion,
+                self.calculated_collective_opinion,
             ),
             dtype=np.float32,
         )
@@ -273,14 +270,17 @@ class SwarmAgent:
             self.committed_to_opinion = self.choose_commit_decision_action()
         return self.committed_to_opinion
 
+    def navigate_and_recieve_opinions(self, tile_grid: np.ndarray) -> None:
+        self.navigate(tile_grid=tile_grid)
+        self.recieve_local_opinions(tile_grid=tile_grid)
+
     def perform_decision_navigate_opinion_update_cycle(
         self, tile_grid: np.ndarray
     ) -> None:
 
         if not (self.decide_if_to_commit()):
             self.decide_to_sense_or_broadcast()
-            self.navigate(tile_grid=tile_grid)
-            self.recieve_local_opinions(tile_grid=tile_grid)
+            self.navigate_and_recieve_opinions(tile_grid=tile_grid)
             self.num_of_cycles_performed += 1
             return
 

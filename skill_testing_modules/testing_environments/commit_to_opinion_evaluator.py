@@ -1,8 +1,6 @@
 import os
 import sys
-import numpy as np
-import wandb
-import random
+from wandb import log
 
 ROOT_DIRECTORY = os.path.dirname(os.getcwd())
 sys.path.append(ROOT_DIRECTORY)
@@ -50,7 +48,7 @@ class CommitToOpinionEvaluator:
                 if agent.calculate_opinion() == self.correct_opinion:
                     correct_commitments_count += 1
 
-            wandb.log(
+            log(
                 {
                     "time_taken": self.total_num_of_steps / 60,
                     "percentage_of_correctly_commited_agents": (

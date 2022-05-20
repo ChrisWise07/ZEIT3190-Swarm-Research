@@ -1,0 +1,28 @@
+{
+    "os": "Linux-5.10.102.1-microsoft-standard-WSL2-x86_64-with-glibc2.29",
+    "python": "3.8.10",
+    "heartbeatAt": "2022-05-20T07:31:17.434756",
+    "startedAt": "2022-05-20T07:30:51.109520",
+    "docker": null,
+    "cpu_count": 8,
+    "cuda": null,
+    "args": [
+        "--training_environment=sense_broadcast_trainer",
+        "--experiment_name=delete_test",
+        "--random_agent_per_step=True",
+        "--max_num_of_steps=10",
+        "--model_type=DQN"
+    ],
+    "state": "running",
+    "program": "main.py",
+    "codePath": "main.py",
+    "git": {
+        "remote": "https://github.com/ChrisWise07/ZEIT3190-Swarm-Research.git",
+        "commit": "b9a55caf7b771296e6ad7207bd14de37e619acce"
+    },
+    "email": null,
+    "root": "/mnt/c/Users/Chris Wise/Documents/GitHub/ZEIT3190-Swarm-Research",
+    "host": "Chris-XPS13",
+    "username": "root",
+    "executable": "/mnt/c/Users/Chris Wise/Documents/GitHub/ZEIT3190-Swarm-Research/venv/bin/python"
+}

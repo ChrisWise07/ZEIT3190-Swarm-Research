@@ -1,4 +1,5 @@
 import argparse
+from random import random
 from helper_files import calculate_optimal_number_of_steps_needed
 from experiment_modules_map import experiment_modules_map
 from skill_training_modules import train_skill_with_environment
@@ -136,31 +137,43 @@ parser.add_argument(
 )
 parser.add_argument(
     "--random_agent_per_step",
-    type=bool,
+    type=str,
     default=False,
     help=("Control if random agent is selected each step (default=None)"),
 )
+parser.add_argument(
+    "--model_type",
+    type=str,
+    default=None,
+    help=("Name of model architecture to train (default=None)"),
+)
 args = parser.parse_args()
 
-if not (args.max_num_of_steps):
-    args.max_num_of_steps = int(
-        (
-            args.optimal_step_multiplier
-            * calculate_optimal_number_of_steps_needed(
-                tiled_environment_width=args.width,
-                tiled_environment_height=args.height,
-            )
-        )
-    )
+
+def convert_random_agent_per_step_to_bool(flag: str) -> None:
+    return flag in ["True", "true", "1", "yes", "Yes"]
 
 
 def main(args: argparse.Namespace) -> None:
-    if args.training_environment:
+    """
+    Main function for the experiment.
+
+    Args:
+        args: The arguments passed to the program.
+    """
+
+    args.random_agent_per_step = convert_random_agent_per_step_to_bool(
+        args.random_agent_per_step
+    )
+
+    if args.training_environment is not None:
         args.training_environment = experiment_modules_map[args.training_environment]
         train_skill_with_environment(args=args)
-    else:
-        args.testing_environment = experiment_modules_map[args.testing_environment]
-        test_skill_with_environment(args=args)
+        return
+
+    args.testing_environment = experiment_modules_map[args.testing_environment]
+    test_skill_with_environment(args=args)
+    return
 
 
 if __name__ == "__main__":

@@ -1,12 +1,8 @@
 import os
 import sys
-import numpy as np
 import gym
-from gym import spaces
-from stable_baselines3 import PPO
 import wandb
 import random
-import scipy.stats as stats
 
 ROOT_DIRECTORY = os.path.dirname(os.getcwd())
 sys.path.append(ROOT_DIRECTORY)
@@ -25,6 +21,10 @@ from .training_environment_utils import (
 
 
 class DynamicOpinionWeightingTrainer(gym.Env):
+    from stable_baselines3 import PPO, DQN
+    from typing import Union
+    from numpy import ndarray
+
     def __init__(
         self,
         max_num_of_steps: int,
@@ -34,10 +34,13 @@ class DynamicOpinionWeightingTrainer(gym.Env):
         random_agent_per_step: bool,
         **kwargs,
     ):
+        from numpy import float32
+        from gym import spaces
+
         super(DynamicOpinionWeightingTrainer, self).__init__()
-        self.action_space = spaces.Box(low=-1, high=1, shape=(2,), dtype=np.float32)
+        self.action_space = spaces.Box(low=-1, high=1, shape=(2,), dtype=float32)
         self.observation_space = spaces.Box(
-            low=0.0, high=1.0, shape=(4,), dtype=np.float32
+            low=0.0, high=1.0, shape=(2,), dtype=float32
         )
         self.max_num_steps = max_num_of_steps
         self.width, self.height = width, height
@@ -46,34 +49,41 @@ class DynamicOpinionWeightingTrainer(gym.Env):
         self.random_agent_per_step = random_agent_per_step
         self.model = None
 
-    def set_model(self, model: PPO):
+    def set_model(self, model: Union[PPO, DQN]):
         self.model = model
 
     def calculate_reward(self, agent: SwarmAgent) -> int:
-        self.correct_opinion_weighting = agent.opinion_weights[self.correct_opinion]
-        self.incorrect_opinion_weighting = agent.opinion_weights[
+        self.correct_opinion_weighting = agent.new_opinion_weights[self.correct_opinion]
+        self.incorrect_opinion_weighting = agent.new_opinion_weights[
             (self.correct_opinion + 1) % 2
         ]
-        return (1 / (1.01 - self.correct_opinion_weighting)) - (
-            100 * self.incorrect_opinion_weighting
+        return (
+            100 * self.correct_opinion_weighting
+            - 100 * self.incorrect_opinion_weighting
         )
+
+    def transform_action_to_opinion_weighting(self, action: ndarray) -> ndarray:
+        return 0.05 * (action + 1)
+
+    def return_action_for_other_agent(self, agent: SwarmAgent):
+        if self.model is not None:
+            return self.transform_action_to_opinion_weighting(
+                self.model.predict(agent.return_opinion_weight_states())[0]
+            )
+        return [0.1, 0.1]
 
     def step(self, action):
         for agent in self.swarm_agents:
             if agent != self.agent_to_train:
-                if self.model is None:
-                    agent.opinion_weights = [0.9, 0.9]
-                else:
-                    agent.opinion_weights = self.model.predict(
-                        agent.return_opinion_weight_states()
-                    )[0] 
+                agent.new_opinion_weights = self.return_action_for_other_agent(agent)
             else:
-                agent.opinion_weights = [((weight + 1) / 2) for weight in action] #[0.0 - 1.0, 0.0 - 1.0]
+                agent.new_opinion_weights = self.transform_action_to_opinion_weighting(
+                    action
+                )
                 reward = self.calculate_reward(agent)
 
-            agent.perform_decision_navigate_opinion_update_cycle(
-                tile_grid=self.tile_grid
-            )
+            agent.decide_to_sense_or_broadcast()
+            agent.navigate_and_recieve_opinions(self.tile_grid)
 
         wandb.log(
             {
@@ -106,6 +116,9 @@ class DynamicOpinionWeightingTrainer(gym.Env):
         )
 
     def reset(self):
+
+        from scipy.stats import truncnorm
+
         self.done = False
         self.num_steps = 0
 
@@ -118,7 +131,7 @@ class DynamicOpinionWeightingTrainer(gym.Env):
         self.tile_grid = environment_type_list[self.index_of_environment](
             width=self.width,
             height=self.height,
-            ratio_of_white_to_black_tiles=stats.truncnorm.rvs(
+            ratio_of_white_to_black_tiles=truncnorm.rvs(
                 (0 - 0.5) / 1, (1 - 0.5) / 1, 0.5, 1
             ),
         )

@@ -1,7 +1,7 @@
 import os
 import sys
 import numpy as np
-import wandb
+from wandb import log
 import random
 
 ROOT_DIRECTORY = os.path.dirname(os.getcwd())
@@ -54,7 +54,7 @@ class RandomActionCorrectSenseBroadcastEvaluator:
                 else:
                     self.broadcast_false_positves[step_number] += 1
 
-        wandb.log(
+        log(
             {
                 "broadcast_accuracy": (
                     self.broadcast_true_positves[step_number]

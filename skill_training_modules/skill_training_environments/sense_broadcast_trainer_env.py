@@ -1,12 +1,9 @@
 import os
 import sys
-import numpy as np
 import gym
-from gym import spaces
-from stable_baselines3 import PPO
 import wandb
 import random
-import scipy.stats as stats
+
 
 ROOT_DIRECTORY = os.path.dirname(os.getcwd())
 sys.path.append(ROOT_DIRECTORY)
@@ -23,6 +20,9 @@ from .training_environment_utils import (
 
 
 class SenseBroadcastTrainer(gym.Env):
+    from stable_baselines3 import PPO, DQN
+    from typing import Union
+
     def __init__(
         self,
         max_num_of_steps: int,
@@ -33,36 +33,38 @@ class SenseBroadcastTrainer(gym.Env):
         **kwargs,
     ):
         super(SenseBroadcastTrainer, self).__init__()
+        from numpy import float32
+        from gym import spaces
+
         self.action_space = spaces.Discrete(2)
         self.observation_space = spaces.Box(
-            low=0.0, high=float(width * height), shape=(4,), dtype=np.float32
+            low=0.0, high=float(width * height), shape=(4,), dtype=float32
         )
         self.max_num_steps = max_num_of_steps
         self.width, self.height = width, height
         self.num_of_swarm_agents = num_of_swarm_agents
         self.environment_type_weighting = [33, 33, 33]
+        self.model = None
         self.random_agent_per_step = random_agent_per_step
 
-    def set_model(self, model: PPO):
+    def set_model(self, model: Union[PPO, DQN]):
         self.model = model
 
     def calculate_reward(self, agent: SwarmAgent) -> int:
         if not agent.sensing:  # agent is broadcasting
             if agent.calculate_opinion() != self.correct_opinion:
                 self.broadcast_false_positives += 1
-                return -10 * (
-                    (self.width * self.height) / (1 + agent.num_of_cells_observed)
-                )
+                return -2
 
             self.broadcast_true_positives += 1
-            return agent.num_of_cells_observed
+            return 1
 
         if agent.calculate_opinion() != self.correct_opinion:
             self.broadcast_true_negatives += 1
-            return 10 * ((self.width * self.height) / (1 + agent.num_of_cells_observed))
+            return -0.01
 
         self.broadcast_false_negatives += 1
-        return -agent.num_of_cells_observed
+        return -0.01
 
     def calculate_broadcast_accuracy(self) -> float:
         return (self.broadcast_true_positives + self.broadcast_true_negatives) / (
@@ -72,18 +74,20 @@ class SenseBroadcastTrainer(gym.Env):
             + self.broadcast_false_negatives
         )
 
+    def return_action_for_other_agent(self, agent: SwarmAgent):
+        if self.model is not None:
+            return self.model.predict(agent.return_sense_broadcast_states())[0].item()
+        return random.choice([0, 1])
+
     def step(self, action):
         for agent in self.swarm_agents:
             if agent != self.agent_to_train:
-                agent.sensing = self.model.predict(
-                    agent.return_sense_broadcast_states()
-                )[0].item()
+                agent.sensing = self.return_action_for_other_agent(agent)
             else:
                 agent.sensing = action
                 reward = self.calculate_reward(agent)
 
-            agent.navigate(tile_grid=self.tile_grid)
-            agent.recieve_local_opinions(tile_grid=self.tile_grid)
+            agent.navigate_and_recieve_opinions(self.tile_grid)
 
         broadcast_accuracy = self.calculate_broadcast_accuracy()
 
@@ -116,9 +120,12 @@ class SenseBroadcastTrainer(gym.Env):
         )
 
     def reset(self):
+        from scipy.stats import truncnorm
+        from numpy import zeros
+
         self.done = False
         self.num_steps = 0
-        self.decision_correctness_tracker = np.zeros(self.max_num_steps)
+        self.decision_correctness_tracker = zeros(self.max_num_steps)
 
         self.index_of_environment = random.choices(
             [0, 1, 2],
@@ -129,7 +136,7 @@ class SenseBroadcastTrainer(gym.Env):
         self.tile_grid = environment_type_list[self.index_of_environment](
             self.width,
             self.height,
-            stats.truncnorm.rvs((0 - 0.5) / 1, (1 - 0.5) / 1, 0.5, 1),
+            truncnorm.rvs((0 - 0.5) / 1, (1 - 0.5) / 1, 0.5, 1),
         )
 
         self.correct_opinion = round(

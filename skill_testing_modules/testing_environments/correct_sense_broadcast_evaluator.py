@@ -1,8 +1,6 @@
 import os
 import sys
-import numpy as np
-import wandb
-import random
+from wandb import log
 
 ROOT_DIRECTORY = os.path.dirname(os.getcwd())
 sys.path.append(ROOT_DIRECTORY)
@@ -63,7 +61,7 @@ class CorrectSenseBroadcastEvaluator:
             broadcast_false_negatives += 1
             continue
 
-        wandb.log(
+        log(
             {
                 "broadcast_accuracy": (
                     broadcast_true_positves + broadcast_true_negatives

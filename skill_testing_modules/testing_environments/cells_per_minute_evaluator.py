@@ -1,7 +1,7 @@
 import os
 import sys
 import numpy as np
-import wandb
+from wandb import log
 import random
 
 ROOT_DIRECTORY = os.path.dirname(os.getcwd())
@@ -38,7 +38,7 @@ class CellsPerMinuteEvaluator:
 
                 self.num_of_cells_visited_by_agent[pos] = current_num_of_cells_visited
 
-            wandb.log(
+            log(
                 {
                     "average_num_of_new_cells_visited_in_minute": np.mean(
                         self.num_of_cells_visited_by_agent_in_minute
@@ -46,7 +46,7 @@ class CellsPerMinuteEvaluator:
                 }
             )
 
-            wandb.log(
+            log(
                 {
                     "average_total_num_of_cells_visited": np.mean(
                         self.num_of_cells_visited_by_agent

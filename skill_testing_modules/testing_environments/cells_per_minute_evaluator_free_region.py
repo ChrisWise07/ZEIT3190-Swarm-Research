@@ -1,6 +1,7 @@
 import os
 import sys
 import random
+from wandb import log
 
 ROOT_DIRECTORY = os.path.dirname(os.getcwd())
 sys.path.append(ROOT_DIRECTORY)
@@ -22,7 +23,6 @@ class CellsPerMinuteEvaluatorFreeRegion:
         self.eval_model_name = eval_model_name
 
     def step(self, step_number: int):
-        import wandb
 
         if self.eval_model_name:
             self.swarm_agent.navigate(tile_grid=self.tile_grid)
@@ -45,12 +45,8 @@ class CellsPerMinuteEvaluatorFreeRegion:
                 current_num_of_cells_visited
             )
 
-            wandb.log(
-                {"average_num_of_new_cells_visited_in_minute": cells_visited_in_minute}
-            )
-            wandb.log(
-                {"average_total_num_of_cells_visited": current_num_of_cells_visited}
-            )
+            log({"average_num_of_new_cells_visited_in_minute": cells_visited_in_minute})
+            log({"average_total_num_of_cells_visited": current_num_of_cells_visited})
 
     def reset(self):
         self.tile_grid = create_nonclustered_tile_grid(

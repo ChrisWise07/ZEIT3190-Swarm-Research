@@ -1,12 +1,8 @@
 import os
 import sys
-import numpy as np
 import gym
-from gym import spaces
-from stable_baselines3 import PPO
 import wandb
 import random
-import scipy.stats as stats
 
 ROOT_DIRECTORY = os.path.dirname(os.getcwd())
 sys.path.append(ROOT_DIRECTORY)
@@ -25,6 +21,9 @@ from .training_environment_utils import (
 
 
 class CommitToOpinionTrainer(gym.Env):
+    from stable_baselines3 import PPO, DQN
+    from typing import Union
+
     def __init__(
         self,
         max_num_of_steps: int,
@@ -34,10 +33,14 @@ class CommitToOpinionTrainer(gym.Env):
         random_agent_per_step: bool,
         **kwargs,
     ):
+        from gym import spaces
+        from numpy import float32
+
         super(CommitToOpinionTrainer, self).__init__()
+
         self.action_space = spaces.Discrete(2)
         self.observation_space = spaces.Box(
-            low=0.0, high=float(max_num_of_steps), shape=(4,), dtype=np.float32
+            low=0.0, high=float(max_num_of_steps), shape=(4,), dtype=float32
         )
         self.max_num_steps = max_num_of_steps
         self.width, self.height = width, height
@@ -46,7 +49,7 @@ class CommitToOpinionTrainer(gym.Env):
         self.model = None
         self.random_agent_per_step = random_agent_per_step
 
-    def set_model(self, model: PPO):
+    def set_model(self, model: Union[PPO, DQN]):
         self.model = model
 
     def calculate_reward(self, agent: SwarmAgent) -> int:
@@ -55,21 +58,22 @@ class CommitToOpinionTrainer(gym.Env):
 
         if agent.calculate_opinion() != self.correct_opinion:
             self.incorrect_commitments_count += 1
-            return -self.max_num_steps / (agent.num_of_cycles_performed + 1)
+            return -200
 
         self.correct_commitments_count += 1
-        return agent.num_of_cycles_performed
+        return 100
 
     def step(self, action):
+
         for agent in self.swarm_agents:
             if agent == self.agent_to_train:
                 agent.committed_to_opinion = action
                 reward = self.calculate_reward(agent)
                 agent.committed_to_opinion = 0
 
-            agent.perform_decision_navigate_opinion_update_cycle(
-                tile_grid=self.tile_grid
-            )
+            agent.decide_to_sense_or_broadcast()
+            agent.navigate_and_recieve_opinions(self.tile_grid)
+            agent.num_of_cycles_performed += 1
 
         self.num_steps += 1
 
@@ -106,6 +110,8 @@ class CommitToOpinionTrainer(gym.Env):
         )
 
     def reset(self):
+        from scipy.stats import truncnorm
+
         self.done = False
         self.num_steps = 0
         self.committed_agents_count = 0
@@ -119,7 +125,7 @@ class CommitToOpinionTrainer(gym.Env):
         self.tile_grid = environment_type_list[self.index_of_environment](
             width=self.width,
             height=self.height,
-            ratio_of_white_to_black_tiles=stats.truncnorm.rvs(
+            ratio_of_white_to_black_tiles=truncnorm.rvs(
                 (0 - 0.5) / 1, (1 - 0.5) / 1, 0.5, 1
             ),
         )

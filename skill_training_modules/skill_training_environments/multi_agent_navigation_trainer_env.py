@@ -2,10 +2,9 @@ import os
 import sys
 import numpy as np
 import gym
-from gym import spaces
 import wandb
 import random
-from stable_baselines3 import PPO
+
 
 ROOT_DIRECTORY = os.path.dirname(os.getcwd())
 sys.path.append(ROOT_DIRECTORY)
@@ -17,6 +16,8 @@ from environment_agent_modules import (
 
 
 class MultiAgentNavigationTrainer(gym.Env):
+    from stable_baselines3 import PPO
+
     def __init__(
         self,
         max_num_of_steps: int,
@@ -25,6 +26,8 @@ class MultiAgentNavigationTrainer(gym.Env):
         num_of_swarm_agents: int,
         **kwargs
     ):
+        from gym import spaces
+
         super(MultiAgentNavigationTrainer, self).__init__()
         self.action_space = spaces.Discrete(3)
         self.observation_space = spaces.Box(low=0, high=4, shape=(2,), dtype=int)
