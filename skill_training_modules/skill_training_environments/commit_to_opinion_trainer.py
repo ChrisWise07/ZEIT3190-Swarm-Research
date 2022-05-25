@@ -1,6 +1,8 @@
 import os
 import sys
+from typing import List
 import gym
+from numpy import average
 import wandb
 import random
 
@@ -54,57 +56,70 @@ class CommitToOpinionTrainer(gym.Env):
 
     def calculate_reward(self, agent: SwarmAgent) -> int:
         if not (agent.committed_to_opinion):
-            return -0.5
+            return -1
 
         if agent.calculate_opinion() != self.correct_opinion:
-            self.incorrect_commitments_count += 1
             return -200
 
-        self.correct_commitments_count += 1
         return 100
+
+    def return_action_for_other_agent(self, agent: SwarmAgent):
+        if self.model is not None:
+            return self.model.predict(agent.return_commit_decision_states())[0].item()
+        return random.choice([0, 1])
 
     def step(self, action):
 
-        for agent in self.swarm_agents:
-            if agent == self.agent_to_train:
+        for agent in self.uncommited_agents[:]:
+            if agent != self.agent_to_train:
+                agent.committed_to_opinion = self.return_action_for_other_agent(agent)
+            else:
                 agent.committed_to_opinion = action
-                reward = self.calculate_reward(agent)
-                agent.committed_to_opinion = 0
+                self.reward = self.calculate_reward(agent)
 
-            agent.decide_to_sense_or_broadcast()
-            agent.navigate_and_recieve_opinions(self.tile_grid)
-            agent.num_of_cycles_performed += 1
+            if agent.committed_to_opinion:
+                self.commited_agents.append(agent)
+                self.uncommited_agents.remove(agent)
+
+        for agent in self.swarm_agents:
+            agent.perform_decision_navigate_opinion_update_cycle(self.tile_grid)
 
         self.num_steps += 1
 
         if self.num_steps == self.max_num_steps:
             self.done = True
 
+            correct_commitment_count = 0
+            total_commitment_time = 0
+
+            for agent in self.commited_agents:
+                if agent.calculate_opinion() == self.correct_opinion:
+                    correct_commitment_count += 1
+                total_commitment_time += agent.num_of_cycles_performed
+
+            correct_commitment_ratio = (
+                correct_commitment_count / self.num_of_swarm_agents
+            )
+
             wandb.log(
                 {
-                    "correct_commitment_count": self.correct_commitments_count,
-                    "incorrect_commitment_count": self.incorrect_commitments_count,
+                    "percentage_of_correct_commitments": correct_commitment_ratio,
+                    "average_commitment_time": total_commitment_time
+                    / self.num_of_swarm_agents,
                 }
             )
 
             self.environment_type_weighting[self.index_of_environment] = round(
-                (
-                    inverse_sigmoid_for_weighting(
-                        (self.correct_commitments_count / self.max_num_steps) * 100
-                    )
-                    + sigmoid_for_weighting(
-                        (self.incorrect_commitments_count / self.max_num_steps) * 100
-                    )
-                )
-                / 2
+                (inverse_sigmoid_for_weighting(correct_commitment_ratio * 100))
             )
 
         if self.random_agent_per_step:
-            self.agent_to_train = random.choice(self.swarm_agents)
+            if len(self.uncommited_agents):  # if there are agents left to commit
+                self.agent_to_train = random.choice(self.uncommited_agents)
 
         return (
             self.agent_to_train.return_commit_decision_states(),
-            reward,
+            self.reward,
             self.done,
             {},
         )
@@ -114,7 +129,6 @@ class CommitToOpinionTrainer(gym.Env):
 
         self.done = False
         self.num_steps = 0
-        self.committed_agents_count = 0
 
         self.index_of_environment = random.choices(
             [0, 1, 2],
@@ -149,9 +163,9 @@ class CommitToOpinionTrainer(gym.Env):
             for _ in range(self.num_of_swarm_agents)
         ]
 
-        self.correct_commitments_count = 0
-        self.incorrect_commitments_count = 0
+        self.uncommited_agents = self.swarm_agents.copy()
+        self.commited_agents = []  # type: List[SwarmAgent]
 
-        self.agent_to_train = random.choice(self.swarm_agents)
+        self.agent_to_train = random.choice(self.uncommited_agents)
 
         return self.agent_to_train.return_commit_decision_states()

@@ -2,6 +2,7 @@ from .skill_training_environments import (
     SingleAgentNavigationTrainer,
     MultiAgentNavigationTrainer,
     SenseBroadcastTrainer,
+    CommitToOpinionTrainerSafe,
     CommitToOpinionTrainer,
     DynamicOpinionWeightingTrainer,
 )

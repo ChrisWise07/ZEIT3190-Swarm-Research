@@ -61,10 +61,10 @@ class SenseBroadcastTrainer(gym.Env):
 
         if agent.calculate_opinion() != self.correct_opinion:
             self.broadcast_true_negatives += 1
-            return -0.01
+            return 2
 
         self.broadcast_false_negatives += 1
-        return -0.01
+        return -1
 
     def calculate_broadcast_accuracy(self) -> float:
         return (self.broadcast_true_positives + self.broadcast_true_negatives) / (

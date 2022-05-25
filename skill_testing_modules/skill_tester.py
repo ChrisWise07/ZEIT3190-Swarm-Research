@@ -1,9 +1,9 @@
 import argparse
 import os
+import wandb
 
 
 def test_skill_with_environment(args: argparse.Namespace) -> None:
-    import wandb
 
     config = vars(args)
 

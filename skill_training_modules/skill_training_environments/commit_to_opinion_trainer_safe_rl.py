@@ -20,10 +20,9 @@ from .training_environment_utils import (
 )
 
 
-class DynamicOpinionWeightingTrainer(gym.Env):
+class CommitToOpinionTrainerSafe(gym.Env):
     from stable_baselines3 import PPO, DQN
     from typing import Union
-    from numpy import ndarray
 
     def __init__(
         self,
@@ -32,106 +31,92 @@ class DynamicOpinionWeightingTrainer(gym.Env):
         height: int,
         num_of_swarm_agents: int,
         random_agent_per_step: bool,
-        collective_opinion_weighting: float,
         **kwargs,
     ):
-        from numpy import float32
         from gym import spaces
+        from numpy import float32
 
-        super(DynamicOpinionWeightingTrainer, self).__init__()
-        self.action_space = spaces.Box(low=-1, high=1, shape=(2,), dtype=float32)
+        super(CommitToOpinionTrainerSafe, self).__init__()
+
+        self.action_space = spaces.Discrete(2)
         self.observation_space = spaces.Box(
-            low=0.0, high=1.0, shape=(2,), dtype=float32
+            low=0.0, high=float(max_num_of_steps), shape=(4,), dtype=float32
         )
         self.max_num_steps = max_num_of_steps
         self.width, self.height = width, height
         self.num_of_swarm_agents = num_of_swarm_agents
         self.environment_type_weighting = [33, 33, 33]
-        self.random_agent_per_step = random_agent_per_step
-        self.opinion_weight_max = 1 - collective_opinion_weighting
         self.model = None
+        self.random_agent_per_step = random_agent_per_step
 
     def set_model(self, model: Union[PPO, DQN]):
         self.model = model
 
     def calculate_reward(self, agent: SwarmAgent) -> int:
-        self.correct_opinion_weighting = agent.new_opinion_weights[self.correct_opinion]
-        self.incorrect_opinion_weighting = agent.new_opinion_weights[
-            (self.correct_opinion + 1) % 2
-        ]
-        return (
-            1 / ((self.opinion_weight_max + 0.01) - self.correct_opinion_weighting)
-        ) + (1 / (0.01 + self.incorrect_opinion_weighting))
+        if not (agent.committed_to_opinion):
+            self.no_commitments_count += 1
+            return -1
 
-    def transform_action_to_opinion_weighting(self, action: ndarray) -> ndarray:
-        return (self.opinion_weight_max / 2) * (action + 1)
+        if agent.calculate_opinion() != self.correct_opinion:
+            self.incorrect_commitments_count += 1
+            return -200
 
-    def return_action_for_other_agent(self, agent: SwarmAgent):
-        if self.model is not None:
-            return self.transform_action_to_opinion_weighting(
-                self.model.predict(agent.return_opinion_weight_states())[0]
-            )
-        return [self.opinion_weight_max, self.opinion_weight_max]
+        self.correct_commitments_count += 1
+        return 100
 
     def step(self, action):
-        for agent in self.swarm_agents:
-            if agent != self.agent_to_train:
-                agent.new_opinion_weights = self.return_action_for_other_agent(agent)
-            else:
-                agent.new_opinion_weights = self.transform_action_to_opinion_weighting(
-                    action
-                )
 
+        for agent in self.swarm_agents:
+            if agent == self.agent_to_train:
+                agent.committed_to_opinion = action
                 reward = self.calculate_reward(agent)
+                agent.committed_to_opinion = 0
 
             agent.decide_to_sense_or_broadcast()
             agent.navigate_and_recieve_opinions(self.tile_grid)
-
-        wandb.log(
-            {
-                "correct_opinion_weighting": self.correct_opinion_weighting,
-                "incorrect_opinion_weighting": self.incorrect_opinion_weighting,
-                "distance_from_optimal_weighting": (
-                    (self.opinion_weight_max - self.correct_opinion_weighting)
-                    + self.incorrect_opinion_weighting
-                ),
-            }
-        )
+            agent.num_of_cycles_performed += 1
 
         self.num_steps += 1
 
         if self.num_steps == self.max_num_steps:
             self.done = True
 
+            wandb.log(
+                {
+                    "correct_commitment_count": self.correct_commitments_count,
+                    "incorrect_commitment_count": self.incorrect_commitments_count,
+                    "no_commitment_count": self.no_commitments_count,
+                }
+            )
+
             self.environment_type_weighting[self.index_of_environment] = round(
                 (
                     inverse_sigmoid_for_weighting(
-                        (self.correct_opinion_weighting / self.opinion_weight_max) * 100
+                        (self.correct_commitments_count / self.max_num_steps) * 100
                     )
                     + sigmoid_for_weighting(
-                        (self.incorrect_opinion_weighting / self.opinion_weight_max)
-                        * 100
+                        (self.incorrect_commitments_count / self.max_num_steps) * 100
                     )
                 )
-                / 2.0
+                / 2
             )
 
         if self.random_agent_per_step:
             self.agent_to_train = random.choice(self.swarm_agents)
 
         return (
-            self.agent_to_train.return_opinion_weight_states(),
+            self.agent_to_train.return_commit_decision_states(),
             reward,
             self.done,
             {},
         )
 
     def reset(self):
-
         from scipy.stats import truncnorm
 
         self.done = False
         self.num_steps = 0
+        self.committed_agents_count = 0
 
         self.index_of_environment = random.choices(
             [0, 1, 2],
@@ -166,6 +151,10 @@ class DynamicOpinionWeightingTrainer(gym.Env):
             for _ in range(self.num_of_swarm_agents)
         ]
 
+        self.correct_commitments_count = 0
+        self.incorrect_commitments_count = 0
+        self.no_commitments_count = 0
+
         self.agent_to_train = random.choice(self.swarm_agents)
 
-        return self.agent_to_train.return_opinion_weight_states()
+        return self.agent_to_train.return_commit_decision_states()

@@ -10,5 +10,6 @@ generic_env_check(
         "communication_range": 1,
         "model": None,
         "random_agent_per_step": False,
+        "collective_opinion_weighting": 0.6,
     },
 )

@@ -147,6 +147,14 @@ parser.add_argument(
     default=None,
     help=("Name of model architecture to train (default=None)"),
 )
+parser.add_argument(
+    "--collective_opinion_weighting",
+    type=float,
+    default=0.9,
+    help=(
+        "Controls the weighting of the collective opinion when fusing opinions (default=0.9)"
+    ),
+)
 args = parser.parse_args()
 
 

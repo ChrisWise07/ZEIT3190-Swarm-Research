@@ -1,6 +1,6 @@
 import os
 import sys
-from wandb import log
+import wandb
 
 ROOT_DIRECTORY = os.path.dirname(os.getcwd())
 sys.path.append(ROOT_DIRECTORY)
@@ -61,7 +61,7 @@ class CorrectSenseBroadcastEvaluator:
             broadcast_false_negatives += 1
             continue
 
-        log(
+        wandb.log(
             {
                 "broadcast_accuracy": (
                     broadcast_true_positves + broadcast_true_negatives

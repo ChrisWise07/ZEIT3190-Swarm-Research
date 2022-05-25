@@ -18,9 +18,9 @@ from .swarm_agent_enums import (
 class SwarmAgent:
     starting_cell: InitVar[Dict[str, Any]]
     model_names: InitVar[Dict[str, str]] = {
-        "nav_model": "multi_agent_nav",
-        "sense_model": "obvs_based_reward_follow_agent_sense_broad",
-        "commit_to_opinion_model": "commit_to_opinion_model",
+        "nav_model": "multi_agent_nav_model",
+        "sense_model": "sense_broadcast_model",
+        "commit_to_opinion_model": "commit_to_opinion_trainer_DQN_random_agent_False_increase_no_action_punishment",
     }
     needs_models_loaded: InitVar[bool] = False
     current_direction_facing: int = Direction.RIGHT.value
@@ -45,17 +45,17 @@ class SwarmAgent:
     ) -> None:
         self.cells_visited = set()
         if needs_models_loaded:
-            from stable_baselines3 import PPO
+            from stable_baselines3 import PPO, DQN
 
             self.navigation_model = PPO.load(
                 f"{TRAINED_MODELS_DIRECTORY}/{model_names.get('nav_model')}"
             )
 
-            self.sense_broadcast_model = PPO.load(
+            self.sense_broadcast_model = DQN.load(
                 f"{TRAINED_MODELS_DIRECTORY}/{model_names.get('sense_model')}"
             )
 
-            self.commit_to_opinion_model = PPO.load(
+            self.commit_to_opinion_model = DQN.load(
                 f"{TRAINED_MODELS_DIRECTORY}/{model_names.get('commit_to_opinion_model')}"
             )
 
@@ -278,11 +278,10 @@ class SwarmAgent:
         self, tile_grid: np.ndarray
     ) -> None:
 
-        if not (self.decide_if_to_commit()):
+        if not (self.committed_to_opinion):
             self.decide_to_sense_or_broadcast()
             self.navigate_and_recieve_opinions(tile_grid=tile_grid)
             self.num_of_cycles_performed += 1
-            return
-
-        self.sensing = 0
-        self.navigate(tile_grid=tile_grid)
+        else:
+            self.sensing = 0  # agent is broadcasting opinion
+            self.navigate(tile_grid=tile_grid)
