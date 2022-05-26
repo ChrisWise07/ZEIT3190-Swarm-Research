@@ -5,4 +5,5 @@ from .testing_environments import (
     CorrectSenseBroadcastEvaluator,
     RandomActionCorrectSenseBroadcastEvaluator,
     CommitToOpinionEvaluator,
+    DynamicOpinionWeightEvaluator,
 )

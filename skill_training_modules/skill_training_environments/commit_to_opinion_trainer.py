@@ -1,13 +1,13 @@
 import os
 import sys
-from typing import List
 import gym
-from numpy import average
+import numpy as np
 import wandb
 import random
 
 ROOT_DIRECTORY = os.path.dirname(os.getcwd())
 sys.path.append(ROOT_DIRECTORY)
+SECONDS_IN_MINUTE = 60
 
 from environment_agent_modules import (
     SwarmAgent,
@@ -56,7 +56,7 @@ class CommitToOpinionTrainer(gym.Env):
 
     def calculate_reward(self, agent: SwarmAgent) -> int:
         if not (agent.committed_to_opinion):
-            return -1
+            return -0.05
 
         if agent.calculate_opinion() != self.correct_opinion:
             return -200
@@ -68,20 +68,20 @@ class CommitToOpinionTrainer(gym.Env):
             return self.model.predict(agent.return_commit_decision_states())[0].item()
         return random.choice([0, 1])
 
-    def step(self, action):
+    def set_time_to_first_commit(self, pos: int, time: int):
+        self.time_to_first_commit[pos] = time
 
-        for agent in self.uncommited_agents[:]:
+    def step(self, action):
+        for pos, agent in enumerate(self.swarm_agents):
             if agent != self.agent_to_train:
                 agent.committed_to_opinion = self.return_action_for_other_agent(agent)
             else:
                 agent.committed_to_opinion = action
-                self.reward = self.calculate_reward(agent)
+                reward = self.calculate_reward(agent)
 
-            if agent.committed_to_opinion:
-                self.commited_agents.append(agent)
-                self.uncommited_agents.remove(agent)
+            if agent.committed_to_opinion and not self.time_to_first_commit[pos]:
+                self.set_time_to_first_commit(pos, self.num_steps)
 
-        for agent in self.swarm_agents:
             agent.perform_decision_navigate_opinion_update_cycle(self.tile_grid)
 
         self.num_steps += 1
@@ -90,12 +90,10 @@ class CommitToOpinionTrainer(gym.Env):
             self.done = True
 
             correct_commitment_count = 0
-            total_commitment_time = 0
 
-            for agent in self.commited_agents:
+            for agent in self.swarm_agents:
                 if agent.calculate_opinion() == self.correct_opinion:
                     correct_commitment_count += 1
-                total_commitment_time += agent.num_of_cycles_performed
 
             correct_commitment_ratio = (
                 correct_commitment_count / self.num_of_swarm_agents
@@ -104,8 +102,9 @@ class CommitToOpinionTrainer(gym.Env):
             wandb.log(
                 {
                     "percentage_of_correct_commitments": correct_commitment_ratio,
-                    "average_commitment_time": total_commitment_time
-                    / self.num_of_swarm_agents,
+                    "average_commitment_time": np.average(
+                        self.time_to_first_commit / SECONDS_IN_MINUTE
+                    ),
                 }
             )
 
@@ -114,12 +113,11 @@ class CommitToOpinionTrainer(gym.Env):
             )
 
         if self.random_agent_per_step:
-            if len(self.uncommited_agents):  # if there are agents left to commit
-                self.agent_to_train = random.choice(self.uncommited_agents)
+            self.agent_to_train = random.choice(self.swarm_agents)
 
         return (
             self.agent_to_train.return_commit_decision_states(),
-            self.reward,
+            reward,
             self.done,
             {},
         )
@@ -163,9 +161,7 @@ class CommitToOpinionTrainer(gym.Env):
             for _ in range(self.num_of_swarm_agents)
         ]
 
-        self.uncommited_agents = self.swarm_agents.copy()
-        self.commited_agents = []  # type: List[SwarmAgent]
-
-        self.agent_to_train = random.choice(self.uncommited_agents)
+        self.agent_to_train = random.choice(self.swarm_agents)
+        self.time_to_first_commit = np.zeros(self.num_of_swarm_agents)
 
         return self.agent_to_train.return_commit_decision_states()

@@ -5,3 +5,4 @@ from .random_action_correct_sense_broadcast_evaluator import (
     RandomActionCorrectSenseBroadcastEvaluator,
 )
 from .commit_to_opinion_evaluator import CommitToOpinionEvaluator
+from .dynamic_opinion_weight_evaluator import DynamicOpinionWeightEvaluator

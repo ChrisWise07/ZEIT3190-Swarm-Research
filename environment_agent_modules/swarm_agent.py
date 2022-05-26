@@ -1,8 +1,6 @@
 import numpy as np
-
 from dataclasses import dataclass, field, InitVar
 from typing import Any, Dict, List, Tuple, Set, Union
-
 from .tile_properties import WallType
 from .utils import validate_cell
 from helper_files import TRAINED_MODELS_DIRECTORY
@@ -17,12 +15,14 @@ from .swarm_agent_enums import (
 @dataclass(repr=False, eq=False)
 class SwarmAgent:
     starting_cell: InitVar[Dict[str, Any]]
+    needs_models_loaded: InitVar[bool] = False
+    collective_opinion_weighting: InitVar[float] = 0.9
     model_names: InitVar[Dict[str, str]] = {
         "nav_model": "multi_agent_nav_model",
         "sense_model": "sense_broadcast_model",
         "commit_to_opinion_model": "commit_to_opinion_trainer_DQN_random_agent_False_increase_no_action_punishment",
+        "dynamic_opinion_model": "dynamic_opinion_trainer_DQN_random_agent_False_increase_no_action_punishment",
     }
-    needs_models_loaded: InitVar[bool] = False
     current_direction_facing: int = Direction.RIGHT.value
     navigation_model = None
     sense_broadcast_model = None
@@ -33,7 +33,7 @@ class SwarmAgent:
     calculated_collective_opinion: float = 0.5
     communication_range: int = 1
     committed_to_opinion: int = 0
-    new_opinion_weights: List[float] = field(default_factory=lambda: [0.1, 0.1])
+
     current_cell: Tuple[int, int] = field(init=False)
     cells_visited: Set[Tuple[int, int]] = field(init=False)
 
@@ -42,8 +42,13 @@ class SwarmAgent:
         starting_cell: Dict[str, Any],
         model_names: Dict[str, str],
         needs_models_loaded: bool,
+        collective_opinion_weighting: float,
     ) -> None:
         self.cells_visited = set()
+        self.opinion_weight_max = 1 - collective_opinion_weighting
+
+        self.new_opinion_weights = [self.opinion_weight_max, self.opinion_weight_max]
+
         if needs_models_loaded:
             from stable_baselines3 import PPO, DQN
 
@@ -57,6 +62,10 @@ class SwarmAgent:
 
             self.commit_to_opinion_model = DQN.load(
                 f"{TRAINED_MODELS_DIRECTORY}/{model_names.get('commit_to_opinion_model')}"
+            )
+
+            self.dynamic_opinion_model = PPO.load(
+                f"{TRAINED_MODELS_DIRECTORY}/{model_names.get('dynamic_opinion_model')}"
             )
 
         if not (self.occupy_cell(starting_cell)):
@@ -273,6 +282,19 @@ class SwarmAgent:
     def navigate_and_recieve_opinions(self, tile_grid: np.ndarray) -> None:
         self.navigate(tile_grid=tile_grid)
         self.recieve_local_opinions(tile_grid=tile_grid)
+
+    def predict_optimal_opinion_weights(self) -> None:
+        return self.dynamic_opinion_model.predict(self.return_opinion_weight_states())[
+            0
+        ]
+
+    def transform_action_to_opinion_weighting(self, action: np.ndarray) -> np.ndarray:
+        return (self.opinion_weight_max / 2) * (action + 1)
+
+    def set_dynamic_opinion_weights(self) -> None:
+        self.new_opinion_weights = self.transform_action_to_opinion_weighting(
+            self.predict_optimal_opinion_weights()
+        )
 
     def perform_decision_navigate_opinion_update_cycle(
         self, tile_grid: np.ndarray

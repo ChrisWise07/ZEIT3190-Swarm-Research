@@ -4,6 +4,7 @@ from skill_testing_modules import (
     CorrectSenseBroadcastEvaluator,
     RandomActionCorrectSenseBroadcastEvaluator,
     CommitToOpinionEvaluator,
+    DynamicOpinionWeightEvaluator,
 )
 from skill_training_modules import (
     SingleAgentNavigationTrainer,
@@ -26,4 +27,5 @@ experiment_modules_map = {
     "correct_sense_broadcast_evaluator": CorrectSenseBroadcastEvaluator,
     "random_action_correct_sense_broadcast_evaluator": RandomActionCorrectSenseBroadcastEvaluator,
     "commit_to_opinion_evaluator": CommitToOpinionEvaluator,
+    "dynamic_opinion_weight_evaluator": DynamicOpinionWeightEvaluator,
 }
