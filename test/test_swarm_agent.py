@@ -712,8 +712,8 @@ class swarm_agent_tester(unittest.TestCase):
         )
 
     def test_update_internal_collective_opinion(self):
-        self.swarm_agent.update_calculated_collective_opinion(1)
-        self.swarm_agent.update_calculated_collective_opinion(0)
+        self.swarm_agent.dynamic_model_based_collective_opinion_update(1)
+        self.swarm_agent.dynamic_model_based_collective_opinion_update(0)
         self.assertAlmostEqual(
             self.swarm_agent.calculated_collective_opinion,
             0.495,

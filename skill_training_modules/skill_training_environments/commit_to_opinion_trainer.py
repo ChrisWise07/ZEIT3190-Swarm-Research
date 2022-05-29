@@ -42,7 +42,7 @@ class CommitToOpinionTrainer(gym.Env):
 
         self.action_space = spaces.Discrete(2)
         self.observation_space = spaces.Box(
-            low=0.0, high=float(max_num_of_steps), shape=(4,), dtype=float32
+            low=0.0, high=float(max_num_of_steps), shape=(2,), dtype=float32
         )
         self.max_num_steps = max_num_of_steps
         self.width, self.height = width, height
@@ -56,12 +56,12 @@ class CommitToOpinionTrainer(gym.Env):
 
     def calculate_reward(self, agent: SwarmAgent) -> int:
         if not (agent.committed_to_opinion):
-            return -0.05
+            return -0.01 * agent.num_of_cells_observed
 
         if agent.calculate_opinion() != self.correct_opinion:
-            return -200
+            return -((self.width * self.height) / agent.num_of_cells_observed)
 
-        return 100
+        return agent.num_of_cells_observed
 
     def return_action_for_other_agent(self, agent: SwarmAgent):
         if self.model is not None:
@@ -155,8 +155,8 @@ class CommitToOpinionTrainer(gym.Env):
         self.swarm_agents = [
             SwarmAgent(
                 starting_cell=(self.tile_grid[all_possible_tiles.pop(0)]),
-                current_direction_facing=random.randint(0, 3),
                 needs_models_loaded=True,
+                current_direction_facing=random.randint(0, 3),
             )
             for _ in range(self.num_of_swarm_agents)
         ]

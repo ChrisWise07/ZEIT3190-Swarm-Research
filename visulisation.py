@@ -121,11 +121,11 @@ def main() -> None:
 
     swarm_agents = [
         SwarmAgent(
-            starting_cell=(tile_grid[all_possible_tiles.pop(0)]),
-            current_direction_facing=random.randint(0, 3),
+            starting_cell=(tile_grid[(0, _)]),
+            current_direction_facing=0,
             needs_models_loaded=True,
         )
-        for _ in range(20)
+        for _ in range(4)
     ]
 
     display_location = (
@@ -133,12 +133,12 @@ def main() -> None:
         round(SCREEN_MID_POINT[1] - (tile_grid.shape[0] * TILE_SIZE / 1.5)),
     )
 
-    for i in range(50):
+    for i in range(200):
         img = setup_tile_grid_for_display(tile_grid)
 
         for agent in swarm_agents:
             draw_swarm_agent_on_tile_grid(img, agent)
-            agent.perform_decision_navigate_opinion_update_cycle(tile_grid=tile_grid)
+            agent.new_navigate(tile_grid)
 
         move_and_show_window(*display_location, winname="Tile Grid", img=img)
 

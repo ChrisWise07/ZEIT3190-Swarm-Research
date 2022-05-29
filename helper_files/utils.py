@@ -1,5 +1,6 @@
-from typing import Dict
+from typing import Dict, List, Tuple, Union
 import numpy as np
+from stable_baselines3 import PPO, DQN
 
 
 def return_statistical_analysis_data(data: np.ndarray) -> Dict:
@@ -35,3 +36,22 @@ def calculate_optimal_number_of_steps_needed(
             + (2 * tiled_environment_width)
         )
     )
+
+
+def return_list_of_coordinates_column_by_columns(
+    num_of_columns: int, num_of_rows: int
+) -> List[Tuple[int, int]]:
+    """
+    Returns a list of coordinates going by row then columns.
+    """
+
+    return [
+        (row, column) for column in range(num_of_columns) for row in range(num_of_rows)
+    ]
+
+
+def return_model(model_name: str) -> Union[PPO, DQN]:
+    return {
+        "PPO": PPO,
+        "DQN": DQN,
+    }[model_name]

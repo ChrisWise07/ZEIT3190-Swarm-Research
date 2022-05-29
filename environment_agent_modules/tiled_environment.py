@@ -10,18 +10,18 @@ def return_coordinate_to_walls_dict(width: int, height: int) -> RegexDict:
     return RegexDict(
         {
             # top left corner
-            "(0, 0)": [WallType.TOP_WALL.value, WallType.LEFT_WALL.value],
+            "(0, 0)": [WallType.LEFT_WALL.value, WallType.TOP_WALL.value],
             # top right corner
             f"(0, {(width - 1)})": [WallType.TOP_WALL.value, WallType.RIGHT_WALL.value],
+            # bottom right corner
+            f"({(height - 1)}, {(width - 1)})": [
+                WallType.RIGHT_WALL.value,
+                WallType.BOTTOM_WALL.value,
+            ],
             # bottom left corner
             f"({(height - 1)}, 0)": [
                 WallType.BOTTOM_WALL.value,
                 WallType.LEFT_WALL.value,
-            ],
-            # bottom right corner
-            f"({(height - 1)}, {(width - 1)})": [
-                WallType.BOTTOM_WALL.value,
-                WallType.RIGHT_WALL.value,
             ],
             # top_edge
             "(0, .)": [WallType.TOP_WALL.value],

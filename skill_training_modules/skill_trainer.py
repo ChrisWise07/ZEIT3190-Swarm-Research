@@ -1,23 +1,12 @@
 import argparse
 
-from helper_files import (
-    MODELS_DIRECTORY,
-    TRAINED_MODELS_DIRECTORY,
-)
+from helper_files import MODELS_DIRECTORY, TRAINED_MODELS_DIRECTORY, return_model
 
 
 def train_skill_with_environment(args: argparse.Namespace) -> None:
     import wandb
-    from stable_baselines3 import PPO, DQN
     from wandb.integration.sb3 import WandbCallback
     import os
-    from typing import Union
-
-    def return_model(model_name: str) -> Union[PPO, DQN]:
-        return {
-            "PPO": PPO,
-            "DQN": DQN,
-        }[model_name]
 
     config = vars(args)
 

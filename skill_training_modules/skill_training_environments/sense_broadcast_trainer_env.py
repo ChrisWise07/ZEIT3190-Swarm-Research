@@ -38,7 +38,7 @@ class SenseBroadcastTrainer(gym.Env):
 
         self.action_space = spaces.Discrete(2)
         self.observation_space = spaces.Box(
-            low=0.0, high=float(width * height), shape=(4,), dtype=float32
+            low=0.0, high=float(width * height), shape=(2,), dtype=float32
         )
         self.max_num_steps = max_num_of_steps
         self.width, self.height = width, height
@@ -61,10 +61,10 @@ class SenseBroadcastTrainer(gym.Env):
 
         if agent.calculate_opinion() != self.correct_opinion:
             self.broadcast_true_negatives += 1
-            return 2
+            return -0.01
 
         self.broadcast_false_negatives += 1
-        return -1
+        return -0.01
 
     def calculate_broadcast_accuracy(self) -> float:
         return (self.broadcast_true_positives + self.broadcast_true_negatives) / (
@@ -152,8 +152,8 @@ class SenseBroadcastTrainer(gym.Env):
         self.swarm_agents = [
             SwarmAgent(
                 starting_cell=(self.tile_grid[all_possible_tiles.pop(0)]),
-                current_direction_facing=random.randint(0, 3),
                 needs_models_loaded=True,
+                current_direction_facing=random.randint(0, 3),
             )
             for _ in range(self.num_of_swarm_agents)
         ]

@@ -1,3 +1,4 @@
+from .cells_per_minute_evaluator_hand_coded import CellsPerMinuteEvaluatorHandCoded
 from .cells_per_minute_evaluator import CellsPerMinuteEvaluator
 from .cells_per_minute_evaluator_free_region import CellsPerMinuteEvaluatorFreeRegion
 from .correct_sense_broadcast_evaluator import CorrectSenseBroadcastEvaluator

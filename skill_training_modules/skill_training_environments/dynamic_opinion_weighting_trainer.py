@@ -55,8 +55,8 @@ class DynamicOpinionWeightingTrainer(gym.Env):
         self.model = model
 
     def calculate_reward(self, agent: SwarmAgent) -> int:
-        self.correct_opinion_weighting = agent.new_opinion_weights[self.correct_opinion]
-        self.incorrect_opinion_weighting = agent.new_opinion_weights[
+        self.correct_opinion_weighting = agent.opinion_weights[self.correct_opinion]
+        self.incorrect_opinion_weighting = agent.opinion_weights[
             (self.correct_opinion + 1) % 2
         ]
         return (
@@ -76,9 +76,9 @@ class DynamicOpinionWeightingTrainer(gym.Env):
     def step(self, action):
         for agent in self.swarm_agents:
             if agent != self.agent_to_train:
-                agent.new_opinion_weights = self.return_action_for_other_agent(agent)
+                agent.opinion_weights = self.return_action_for_other_agent(agent)
             else:
-                agent.new_opinion_weights = self.transform_action_to_opinion_weighting(
+                agent.opinion_weights = self.transform_action_to_opinion_weighting(
                     action
                 )
 

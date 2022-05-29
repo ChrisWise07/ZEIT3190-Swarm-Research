@@ -1,3 +1,4 @@
+import random
 import numpy as np
 from dataclasses import dataclass, field, InitVar
 from typing import Any, Dict, List, Tuple, Set, Union
@@ -15,24 +16,24 @@ from .swarm_agent_enums import (
 @dataclass(repr=False, eq=False)
 class SwarmAgent:
     starting_cell: InitVar[Dict[str, Any]]
-    needs_models_loaded: InitVar[bool] = False
-    collective_opinion_weighting: InitVar[float] = 0.9
-    model_names: InitVar[Dict[str, str]] = {
+    needs_models_loaded: InitVar[bool]
+    opinion_weighting_method: InitVar[str] = "list_of_weights"
+    model_names: InitVar[Dict[str, Union[str, None]]] = {
         "nav_model": "multi_agent_nav_model",
         "sense_model": "sense_broadcast_model",
-        "commit_to_opinion_model": "commit_to_opinion_trainer_DQN_random_agent_False_increase_no_action_punishment",
-        "dynamic_opinion_model": "dynamic_opinion_trainer_DQN_random_agent_False_increase_no_action_punishment",
+        "commit_to_opinion_model": None,
+        "dynamic_opinion_model": None,
     }
+
     current_direction_facing: int = Direction.RIGHT.value
-    navigation_model = None
-    sense_broadcast_model = None
+    max_new_opinion_weighting: float = 0.1
+
+    communication_range: int = 1
     sensing: int = 1
+    committed_to_opinion: int = 0
     num_of_white_cells_observed: int = 0
     num_of_cells_observed: int = 0
-    num_of_cycles_performed: int = 0
     calculated_collective_opinion: float = 0.5
-    communication_range: int = 1
-    committed_to_opinion: int = 0
 
     current_cell: Tuple[int, int] = field(init=False)
     cells_visited: Set[Tuple[int, int]] = field(init=False)
@@ -40,33 +41,48 @@ class SwarmAgent:
     def __post_init__(
         self,
         starting_cell: Dict[str, Any],
-        model_names: Dict[str, str],
         needs_models_loaded: bool,
-        collective_opinion_weighting: float,
+        opinion_weighting_method: str,
+        model_names: Dict[str, Union[str, None]],
     ) -> None:
         self.cells_visited = set()
-        self.opinion_weight_max = 1 - collective_opinion_weighting
 
-        self.new_opinion_weights = [self.opinion_weight_max, self.opinion_weight_max]
+        self.opinion_weights = [
+            self.max_new_opinion_weighting,
+            self.max_new_opinion_weighting,
+        ]
+
+        self.opinion_weight_function = {
+            "list_of_weights": self.return_opinion_weight_based_on_opinion_weight_list,
+            "equation_based": self.return_opinion_weight_based_on_equation,
+        }[opinion_weighting_method]
 
         if needs_models_loaded:
             from stable_baselines3 import PPO, DQN
 
-            self.navigation_model = PPO.load(
-                f"{TRAINED_MODELS_DIRECTORY}/{model_names.get('nav_model')}"
-            )
+            nav_model = model_names.get("nav_model")
+            if nav_model is not None:
+                self.navigation_model = PPO.load(
+                    f"{TRAINED_MODELS_DIRECTORY}/{nav_model}"
+                )
 
-            self.sense_broadcast_model = DQN.load(
-                f"{TRAINED_MODELS_DIRECTORY}/{model_names.get('sense_model')}"
-            )
+            sense_model = model_names.get("sense_model")
+            if sense_model is not None:
+                self.sense_broadcast_model = DQN.load(
+                    f"{TRAINED_MODELS_DIRECTORY}/{model_names.get('sense_model')}"
+                )
 
-            self.commit_to_opinion_model = DQN.load(
-                f"{TRAINED_MODELS_DIRECTORY}/{model_names.get('commit_to_opinion_model')}"
-            )
+            commit_to_opinion_model = model_names.get("commit_to_opinion_model")
+            if commit_to_opinion_model is not None:
+                self.commit_to_opinion_model = DQN.load(
+                    f"{TRAINED_MODELS_DIRECTORY}/{model_names.get('commit_to_opinion_model')}"
+                )
 
-            self.dynamic_opinion_model = PPO.load(
-                f"{TRAINED_MODELS_DIRECTORY}/{model_names.get('dynamic_opinion_model')}"
-            )
+            dynamic_opinion_model = model_names.get("dynamic_opinion_model")
+            if dynamic_opinion_model is not None:
+                self.dynamic_opinion_model = PPO.load(
+                    f"{TRAINED_MODELS_DIRECTORY}/{model_names.get('dynamic_opinion_model')}"
+                )
 
         if not (self.occupy_cell(starting_cell)):
             self.current_cell = (None, None)
@@ -188,6 +204,31 @@ class SwarmAgent:
             tile_grid=tile_grid,
         )
 
+    def new_choose_navigation_action(self, tile_grid: np.ndarray) -> int:
+        next_tile_coordinates = self.__return_next_cell_coordinate()
+
+        if validate_cell(new_cell=next_tile_coordinates, grid_shape=tile_grid.shape):
+            next_tile_along = tile_grid[next_tile_coordinates]
+
+            if next_tile_along["agent"]:
+                return random.choice([1, 2])
+
+            return 0
+
+        # agent is facing into a corner or wall
+        tile_walls = tile_grid[self.current_cell]["walls"]
+
+        if len(tile_walls) == 1:
+            return random.choice([1, 2])
+
+        return 1 if tile_walls[0] == self.current_direction_facing else 2
+
+    def new_navigate(self, tile_grid: np.ndarray) -> None:
+        self.perform_navigation_action(
+            action=self.new_choose_navigation_action(tile_grid=tile_grid),
+            tile_grid=tile_grid,
+        )
+
     def calculate_opinion(self) -> int:
         return round(self.num_of_white_cells_observed / self.num_of_cells_observed)
 
@@ -195,8 +236,19 @@ class SwarmAgent:
         if not (self.sensing):
             return self.calculate_opinion()
 
-    def update_calculated_collective_opinion(self, opinion: int) -> None:
-        opinion_weight = self.new_opinion_weights[opinion]
+    def return_opinion_weight_based_on_opinion_weight_list(
+        self, opinion: int
+    ) -> List[int]:
+        return self.opinion_weights[opinion]
+
+    def return_opinion_weight_based_on_equation(self, opinion: int) -> float:
+        return self.max_new_opinion_weighting * (
+            1 - abs(self.calculated_collective_opinion - opinion)
+        )
+
+    def update_collective_opinion(self, opinion: int) -> None:
+        opinion_weight = self.opinion_weight_function(opinion=opinion)
+
         self.calculated_collective_opinion = (
             (1 - opinion_weight) * self.calculated_collective_opinion
         ) + (opinion_weight * opinion)
@@ -222,16 +274,15 @@ class SwarmAgent:
             if tile["agent"]:
                 recieved_opinion = tile["agent"].return_opinion()
                 if recieved_opinion is not None:
-                    self.update_calculated_collective_opinion(recieved_opinion)
+                    self.update_collective_opinion(recieved_opinion)
 
     def return_sense_broadcast_states(self) -> np.ndarray:
         opinion = self.calculate_opinion()
-
         return np.array(
             (
-                self.num_of_cells_observed,
                 opinion,
                 self.calculated_collective_opinion,
+                self.num_of_cells_observed,
                 abs(self.calculated_collective_opinion - opinion),
             ),
             dtype=np.float32,
@@ -246,24 +297,18 @@ class SwarmAgent:
         self.sensing = self.choose_sense_broadcast_action()
 
     def return_commit_decision_states(self) -> np.ndarray:
-        opinion = self.calculate_opinion()
-
         return np.array(
             (
-                self.num_of_cycles_performed,
-                opinion,
-                self.calculated_collective_opinion,
-                abs(self.calculated_collective_opinion - opinion),
+                self.num_of_cells_observed,
+                abs(self.calculated_collective_opinion - self.calculate_opinion()),
             ),
             dtype=np.float32,
         )
 
     def return_opinion_weight_states(self) -> np.ndarray:
-        opinion = self.calculate_opinion()
-
         return np.array(
             (
-                opinion,
+                self.calculate_opinion(),
                 self.calculated_collective_opinion,
             ),
             dtype=np.float32,
@@ -277,7 +322,6 @@ class SwarmAgent:
     def decide_if_to_commit(self) -> None:
         if not self.committed_to_opinion:
             self.committed_to_opinion = self.choose_commit_decision_action()
-        return self.committed_to_opinion
 
     def navigate_and_recieve_opinions(self, tile_grid: np.ndarray) -> None:
         self.navigate(tile_grid=tile_grid)
@@ -289,10 +333,10 @@ class SwarmAgent:
         ]
 
     def transform_action_to_opinion_weighting(self, action: np.ndarray) -> np.ndarray:
-        return (self.opinion_weight_max / 2) * (action + 1)
+        return (self.max_new_opinion_weighting / 2) * (action + 1)
 
     def set_dynamic_opinion_weights(self) -> None:
-        self.new_opinion_weights = self.transform_action_to_opinion_weighting(
+        self.opinion_weights = self.transform_action_to_opinion_weighting(
             self.predict_optimal_opinion_weights()
         )
 
@@ -303,7 +347,6 @@ class SwarmAgent:
         if not (self.committed_to_opinion):
             self.decide_to_sense_or_broadcast()
             self.navigate_and_recieve_opinions(tile_grid=tile_grid)
-            self.num_of_cycles_performed += 1
         else:
             self.sensing = 0  # agent is broadcasting opinion
             self.navigate(tile_grid=tile_grid)

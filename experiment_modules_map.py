@@ -1,4 +1,5 @@
 from skill_testing_modules import (
+    CellsPerMinuteEvaluatorHandCoded,
     CellsPerMinuteEvaluator,
     CellsPerMinuteEvaluatorFreeRegion,
     CorrectSenseBroadcastEvaluator,
@@ -22,6 +23,7 @@ experiment_modules_map = {
     "commit_to_opinion_trainer_safe": CommitToOpinionTrainerSafe,
     "commit_to_opinion_trainer": CommitToOpinionTrainer,
     "dynamic_opinion_weight_trainer": DynamicOpinionWeightingTrainer,
+    "cells_per_minute_evaluator_hand_coded": CellsPerMinuteEvaluatorHandCoded,
     "cells_per_minute_evaluator": CellsPerMinuteEvaluator,
     "cells_per_minute_evaluator_free_region": CellsPerMinuteEvaluatorFreeRegion,
     "correct_sense_broadcast_evaluator": CorrectSenseBroadcastEvaluator,

@@ -10,24 +10,24 @@ sys.path.append(ROOT_DIRECTORY)
 from environment_agent_modules import create_nonclustered_tile_grid, SwarmAgent
 
 
-class CellsPerMinuteEvaluator:
+class CellsPerMinuteEvaluatorHandCoded:
     def __init__(
         self,
         width: int,
         height: int,
         num_of_swarm_agents: int,
-        eval_model_name: str,
         max_num_of_steps: int,
         **kwargs
     ):
         self.width, self.height = width, height
         self.num_of_swarm_agents = num_of_swarm_agents
-        self.eval_model_name = eval_model_name
-        self.max_num_of_steps = max_num_of_steps
+        self.max_num_steps = max_num_of_steps
 
     def step(self):
         for agent in self.swarm_agents:
-            agent.navigate(tile_grid=self.tile_grid)
+            agent.perform_navigation_action(
+                action=random.randint(0, 2), tile_grid=self.tile_grid
+            )
 
         self.num_of_steps += 1
 
@@ -50,7 +50,7 @@ class CellsPerMinuteEvaluator:
                 }
             )
 
-        if self.num_of_steps == self.max_num_of_steps:
+        if self.num_of_steps == self.max_num_steps:
             total_number_of_cells_visited = 0
 
             for agent in self.swarm_agents:
@@ -64,11 +64,11 @@ class CellsPerMinuteEvaluator:
             )
 
     def reset(self):
+        self.num_of_steps = 0
+
         self.tile_grid = create_nonclustered_tile_grid(
             width=self.width, height=self.height
         )
-
-        self.num_of_steps = 0
 
         all_possible_tiles = []
 
@@ -80,11 +80,7 @@ class CellsPerMinuteEvaluator:
             SwarmAgent(
                 starting_cell=(self.tile_grid[all_possible_tiles.pop(0)]),
                 current_direction_facing=1,
-                needs_models_loaded=True,
-                model_names={
-                    "nav_model": self.eval_model_name,
-                    "sense_model": "sense_broadcast_model",
-                },
+                needs_models_loaded=False,
             )
             for _ in range(self.num_of_swarm_agents)
         ]
