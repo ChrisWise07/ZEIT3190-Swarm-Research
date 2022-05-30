@@ -16,9 +16,11 @@ from environment_agent_modules import (
 
 from .training_environment_utils import (
     environment_type_list,
-    sigmoid_for_weighting,
     inverse_sigmoid_for_weighting,
-    EPSILON,
+)
+
+from helper_files import (
+    return_list_of_coordinates_column_by_columns,
 )
 
 
@@ -56,10 +58,10 @@ class CommitToOpinionTrainer(gym.Env):
 
     def calculate_reward(self, agent: SwarmAgent) -> int:
         if not (agent.committed_to_opinion):
-            return -0.01 * agent.num_of_cells_observed
+            return -0.005 * agent.num_of_cells_observed
 
         if agent.calculate_opinion() != self.correct_opinion:
-            return -((self.width * self.height) / agent.num_of_cells_observed)
+            return -2 * ((self.width * self.height) / agent.num_of_cells_observed)
 
         return agent.num_of_cells_observed
 
@@ -146,15 +148,17 @@ class CommitToOpinionTrainer(gym.Env):
             return_ratio_of_white_to_black_tiles(self.tile_grid)
         )
 
-        all_possible_tiles = []
-
-        for column in range(20):
-            for row in range(20):
-                all_possible_tiles.append((row, column))
+        list_of_coordinates_to_distribute_agents_over = (
+            return_list_of_coordinates_column_by_columns(
+                num_of_columns=self.width, num_of_rows=self.height
+            )
+        )
 
         self.swarm_agents = [
             SwarmAgent(
-                starting_cell=(self.tile_grid[all_possible_tiles.pop(0)]),
+                starting_cell=(
+                    self.tile_grid[list_of_coordinates_to_distribute_agents_over.pop(0)]
+                ),
                 needs_models_loaded=True,
                 current_direction_facing=random.randint(0, 3),
             )

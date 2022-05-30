@@ -42,12 +42,9 @@ class CommitToOpinionEvaluator:
 
     def step(self):
         for pos, agent in enumerate(self.swarm_agents):
-            print(f"Agent {pos}'s commitment: {agent.committed_to_opinion}")
             if not agent.committed_to_opinion:
-                print(f"Agent {pos}'s is deciding if it wants to commit")
                 agent.decide_if_to_commit()
                 if agent.committed_to_opinion:
-                    print(f"Agent {pos}'s decided to commit to opinion")
                     self.agents_committed += 1
                     self.set_time_to_first_commit(
                         pos, self.num_steps / SECONDS_IN_MINUTE
@@ -65,8 +62,6 @@ class CommitToOpinionEvaluator:
             for agent in self.swarm_agents:
                 if agent.calculate_opinion() == self.correct_opinion:
                     correct_commitments_count += 1
-            print(f"Correct commitments: {correct_commitments_count}")
-            print(f"self.time_to_first_commit: {self.time_to_first_commit}")
 
             wandb.log(
                 {

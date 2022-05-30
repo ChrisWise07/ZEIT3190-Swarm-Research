@@ -11,6 +11,7 @@ from environment_agent_modules import (
     TileColour,
 )
 import random
+from helper_files import return_list_of_coordinates_column_by_columns
 
 TILE_SIZE = 25
 MID_POINT_OFFSET = round(TILE_SIZE / 2)
@@ -113,19 +114,17 @@ def move_and_show_window(x: int, y: int, winname: str, img: np.ndarray) -> None:
 def main() -> None:
     tile_grid = create_nonclustered_tile_grid(20, 20, ratio_of_white_to_black_tiles=0.6)
 
-    all_possible_tiles = []
-
-    for column in range(20):
-        for row in range(20):
-            all_possible_tiles.append((row, column))
+    list_of_locations = return_list_of_coordinates_column_by_columns(
+        num_of_columns=20, num_of_rows=20
+    )
 
     swarm_agents = [
         SwarmAgent(
-            starting_cell=(tile_grid[(0, _)]),
+            starting_cell=(tile_grid[list_of_locations.pop(0)]),
             current_direction_facing=0,
             needs_models_loaded=True,
         )
-        for _ in range(4)
+        for _ in range(20)
     ]
 
     display_location = (

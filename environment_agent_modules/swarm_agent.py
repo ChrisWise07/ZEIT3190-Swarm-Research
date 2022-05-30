@@ -236,9 +236,7 @@ class SwarmAgent:
         if not (self.sensing):
             return self.calculate_opinion()
 
-    def return_opinion_weight_based_on_opinion_weight_list(
-        self, opinion: int
-    ) -> List[int]:
+    def return_opinion_weight_based_on_opinion_weight_list(self, opinion: int) -> float:
         return self.opinion_weights[opinion]
 
     def return_opinion_weight_based_on_equation(self, opinion: int) -> float:

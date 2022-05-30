@@ -51,7 +51,9 @@ class DynamicOpinionWeightEvaluator:
         self.number_of_steps += 1
 
         if self.number_of_steps == self.max_num_of_steps:
+
             if self.opinion_weighting_method == "equation_based":
+
                 correct_opinion_weight = np.array(
                     [
                         agent.return_opinion_weight_based_on_equation(
@@ -60,6 +62,7 @@ class DynamicOpinionWeightEvaluator:
                         for agent in self.swarm_agents
                     ]
                 )
+
                 incorrect_opinion_weights = np.array(
                     [
                         agent.return_opinion_weight_based_on_equation(
@@ -68,6 +71,7 @@ class DynamicOpinionWeightEvaluator:
                         for agent in self.swarm_agents
                     ]
                 )
+
             else:
                 correct_opinion_weight = np.array(
                     [
