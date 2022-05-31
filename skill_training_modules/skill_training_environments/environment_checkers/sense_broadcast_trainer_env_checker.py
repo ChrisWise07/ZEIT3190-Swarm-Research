@@ -8,7 +8,7 @@ generic_env_check(
         "height": 5,
         "num_of_swarm_agents": 5,
         "communication_range": 1,
-        "model": None,
         "random_agent_per_step": False,
+        "model": None,
     },
 )

@@ -155,14 +155,30 @@ parser.add_argument(
         "Controls the weighting of recieved opinions when fusing opinions (default=0.1)"
     ),
 )
-
 parser.add_argument(
     "--opinion_weighting_method",
     type=str,
     default="list_of_weights",
     help=("Method to use for opinion weighting (default=list_of_weights)"),
 )
-
+parser.add_argument(
+    "--num_of_malicious_agents",
+    type=int,
+    default=0,
+    help=("Number of malicious agents (default=0)"),
+)
+parser.add_argument(
+    "--sensing_noise",
+    type=float,
+    default=0.0,
+    help=("Controls the amount of noise added to the sensing (default=0.0)"),
+)
+parser.add_argument(
+    "--communication_noise",
+    type=float,
+    default=0.0,
+    help=("Controls the amount of noise added to the communication (default=0.0)"),
+)
 
 args = parser.parse_args()
 

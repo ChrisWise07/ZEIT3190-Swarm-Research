@@ -7,6 +7,7 @@ import random
 
 ROOT_DIRECTORY = os.path.dirname(os.getcwd())
 sys.path.append(ROOT_DIRECTORY)
+
 SECONDS_IN_MINUTE = 60
 
 from environment_agent_modules import (
@@ -15,8 +16,8 @@ from environment_agent_modules import (
 )
 
 from .training_environment_utils import (
-    environment_type_list,
     inverse_sigmoid_for_weighting,
+    return_environment_based_on_weighting_list,
 )
 
 from helper_files import (
@@ -37,33 +38,35 @@ class CommitToOpinionTrainer(gym.Env):
         random_agent_per_step: bool,
         **kwargs,
     ):
+        super(CommitToOpinionTrainer, self).__init__()
+
+        self.max_num_steps = max_num_of_steps
+        self.width, self.height = width, height
+        self.num_of_swarm_agents = num_of_swarm_agents
+        self.random_agent_per_step = random_agent_per_step
+
+        self.environment_type_weighting = [33, 33, 33]
+        self.model = None
+
         from gym import spaces
         from numpy import float32
-
-        super(CommitToOpinionTrainer, self).__init__()
 
         self.action_space = spaces.Discrete(2)
         self.observation_space = spaces.Box(
             low=0.0, high=float(max_num_of_steps), shape=(2,), dtype=float32
         )
-        self.max_num_steps = max_num_of_steps
-        self.width, self.height = width, height
-        self.num_of_swarm_agents = num_of_swarm_agents
-        self.environment_type_weighting = [33, 33, 33]
-        self.model = None
-        self.random_agent_per_step = random_agent_per_step
 
     def set_model(self, model: Union[PPO, DQN]):
         self.model = model
 
     def calculate_reward(self, agent: SwarmAgent) -> int:
         if not (agent.committed_to_opinion):
-            return -0.005 * agent.num_of_cells_observed
+            return -0.025
 
         if agent.calculate_opinion() != self.correct_opinion:
-            return -2 * ((self.width * self.height) / agent.num_of_cells_observed)
+            return -400
 
-        return agent.num_of_cells_observed
+        return 100
 
     def return_action_for_other_agent(self, agent: SwarmAgent):
         if self.model is not None:
@@ -125,23 +128,14 @@ class CommitToOpinionTrainer(gym.Env):
         )
 
     def reset(self):
-        from scipy.stats import truncnorm
-
         self.done = False
         self.num_steps = 0
 
-        self.index_of_environment = random.choices(
-            [0, 1, 2],
-            weights=self.environment_type_weighting,
-            k=1,
-        ).pop(0)
-
-        self.tile_grid = environment_type_list[self.index_of_environment](
-            width=self.width,
-            height=self.height,
-            ratio_of_white_to_black_tiles=truncnorm.rvs(
-                (0 - 0.5) / 1, (1 - 0.5) / 1, 0.5, 1
-            ),
+        (
+            self.index_of_environment,
+            self.tile_grid,
+        ) = return_environment_based_on_weighting_list(
+            self.environment_type_weighting, self.width, self.height
         )
 
         self.correct_opinion = round(

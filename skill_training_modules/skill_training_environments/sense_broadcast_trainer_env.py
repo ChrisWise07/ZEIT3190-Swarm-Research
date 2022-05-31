@@ -14,9 +14,11 @@ from environment_agent_modules import (
 )
 
 from .training_environment_utils import (
-    environment_type_list,
+    return_environment_based_on_weighting_list,
     inverse_sigmoid_for_weighting,
 )
+
+from helper_files import return_list_of_coordinates_column_by_columns
 
 
 class SenseBroadcastTrainer(gym.Env):
@@ -33,19 +35,22 @@ class SenseBroadcastTrainer(gym.Env):
         **kwargs,
     ):
         super(SenseBroadcastTrainer, self).__init__()
+
+        self.max_num_steps = max_num_of_steps
+        self.width, self.height = width, height
+        self.num_of_swarm_agents = num_of_swarm_agents
+        self.random_agent_per_step = random_agent_per_step
+
+        self.environment_type_weighting = [33, 33, 33]
+        self.model = None
+
         from numpy import float32
         from gym import spaces
 
         self.action_space = spaces.Discrete(2)
         self.observation_space = spaces.Box(
-            low=0.0, high=float(width * height), shape=(2,), dtype=float32
+            low=0.0, high=float(width * height), shape=(4,), dtype=float32
         )
-        self.max_num_steps = max_num_of_steps
-        self.width, self.height = width, height
-        self.num_of_swarm_agents = num_of_swarm_agents
-        self.environment_type_weighting = [33, 33, 33]
-        self.model = None
-        self.random_agent_per_step = random_agent_per_step
 
     def set_model(self, model: Union[PPO, DQN]):
         self.model = model
@@ -54,17 +59,17 @@ class SenseBroadcastTrainer(gym.Env):
         if not agent.sensing:  # agent is broadcasting
             if agent.calculate_opinion() != self.correct_opinion:
                 self.broadcast_false_positives += 1
-                return -2
+                return -(self.width * self.height) / agent.num_of_cells_observed
 
             self.broadcast_true_positives += 1
-            return 1
+            return agent.num_of_cells_observed
 
         if agent.calculate_opinion() != self.correct_opinion:
             self.broadcast_true_negatives += 1
-            return -0.01
+            return (self.width * self.height) / agent.num_of_cells_observed
 
         self.broadcast_false_negatives += 1
-        return -0.01
+        return -agent.num_of_cells_observed
 
     def calculate_broadcast_accuracy(self) -> float:
         return (self.broadcast_true_positives + self.broadcast_true_negatives) / (
@@ -120,38 +125,34 @@ class SenseBroadcastTrainer(gym.Env):
         )
 
     def reset(self):
-        from scipy.stats import truncnorm
         from numpy import zeros
 
         self.done = False
         self.num_steps = 0
         self.decision_correctness_tracker = zeros(self.max_num_steps)
 
-        self.index_of_environment = random.choices(
-            [0, 1, 2],
-            weights=self.environment_type_weighting,
-            k=1,
-        ).pop(0)
-
-        self.tile_grid = environment_type_list[self.index_of_environment](
-            self.width,
-            self.height,
-            truncnorm.rvs((0 - 0.5) / 1, (1 - 0.5) / 1, 0.5, 1),
+        (
+            self.index_of_environment,
+            self.tile_grid,
+        ) = return_environment_based_on_weighting_list(
+            self.environment_type_weighting, self.width, self.height
         )
 
         self.correct_opinion = round(
             return_ratio_of_white_to_black_tiles(self.tile_grid)
         )
 
-        all_possible_tiles = []
-
-        for column in range(20):
-            for row in range(20):
-                all_possible_tiles.append((row, column))
+        list_of_coordinates_to_distribute_agents_over = (
+            return_list_of_coordinates_column_by_columns(
+                num_of_columns=self.width, num_of_rows=self.height
+            )
+        )
 
         self.swarm_agents = [
             SwarmAgent(
-                starting_cell=(self.tile_grid[all_possible_tiles.pop(0)]),
+                starting_cell=(
+                    self.tile_grid[list_of_coordinates_to_distribute_agents_over.pop(0)]
+                ),
                 needs_models_loaded=True,
                 current_direction_facing=random.randint(0, 3),
             )

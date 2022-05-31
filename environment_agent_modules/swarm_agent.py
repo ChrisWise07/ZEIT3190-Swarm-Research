@@ -27,6 +27,8 @@ class SwarmAgent:
 
     current_direction_facing: int = Direction.RIGHT.value
     max_new_opinion_weighting: float = 0.1
+    sensing_noise: float = 0.0
+    communication_noise: float = 0.0
 
     communication_range: int = 1
     sensing: int = 1
@@ -96,7 +98,13 @@ class SwarmAgent:
             self.current_cell = tile["id"]
             if self.sensing:
                 self.num_of_cells_observed += 1
-                if tile["colour"]:
+                tile_color = tile["colour"]
+                tile_color = random.choices(
+                    [tile_color, (tile_color + 1) % 2],
+                    [1 - self.sensing_noise, self.sensing_noise],
+                    k=1,
+                )[0]
+                if tile_color:
                     self.num_of_white_cells_observed += 1
             return True
 
@@ -247,6 +255,12 @@ class SwarmAgent:
     def update_collective_opinion(self, opinion: int) -> None:
         opinion_weight = self.opinion_weight_function(opinion=opinion)
 
+        opinion = random.choices(
+            [opinion, (opinion + 1) % 2],
+            [1 - self.communication_noise, self.communication_noise],
+            k=1,
+        )[0]
+
         self.calculated_collective_opinion = (
             (1 - opinion_weight) * self.calculated_collective_opinion
         ) + (opinion_weight * opinion)
@@ -278,9 +292,9 @@ class SwarmAgent:
         opinion = self.calculate_opinion()
         return np.array(
             (
+                self.num_of_cells_observed,
                 opinion,
                 self.calculated_collective_opinion,
-                self.num_of_cells_observed,
                 abs(self.calculated_collective_opinion - opinion),
             ),
             dtype=np.float32,

@@ -9,5 +9,6 @@ generic_env_check(
         "num_of_swarm_agents": 5,
         "model": None,
         "random_agent_per_step": False,
+        "model": None,
     },
 )
