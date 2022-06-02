@@ -61,7 +61,7 @@ class CommitToOpinionTrainer(gym.Env):
 
     def calculate_reward(self, agent: SwarmAgent) -> int:
         if not (agent.committed_to_opinion):
-            return -0.025
+            return -0.0125
 
         if agent.calculate_opinion() != self.correct_opinion:
             return -400

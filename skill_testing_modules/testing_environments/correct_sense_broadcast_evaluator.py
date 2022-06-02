@@ -12,6 +12,10 @@ from environment_agent_modules import (
 
 from .testing_utils import environment_type_map
 
+from helper_files.utils import (
+    return_list_of_coordinates_column_by_columns,
+)
+
 
 class CorrectSenseBroadcastEvaluator:
     def __init__(
@@ -90,22 +94,23 @@ class CorrectSenseBroadcastEvaluator:
             return_ratio_of_white_to_black_tiles(self.tile_grid)
         )
 
-        all_possible_tiles = []
-
-        for column in range(20):
-            for row in range(20):
-                all_possible_tiles.append((row, column))
+        list_of_coordinates_to_distribute_agents_over = (
+            return_list_of_coordinates_column_by_columns(
+                num_of_columns=self.width, num_of_rows=self.height
+            )
+        )
 
         self.swarm_agents = [
             SwarmAgent(
-                starting_cell=(self.tile_grid[all_possible_tiles.pop(0)]),
+                starting_cell=(
+                    self.tile_grid[list_of_coordinates_to_distribute_agents_over.pop(0)]
+                ),
+                needs_models_loaded=True,
                 model_names={
                     "nav_model": "multi_agent_nav",
                     "sense_model": self.eval_model_name,
-                    "commit_to_opinion_model": "commit_to_opinion_model",
                 },
                 current_direction_facing=1,
-                needs_models_loaded=True,
             )
             for _ in range(self.num_of_swarm_agents)
         ]
