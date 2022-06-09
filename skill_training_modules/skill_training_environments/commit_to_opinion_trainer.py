@@ -61,12 +61,14 @@ class CommitToOpinionTrainer(gym.Env):
 
     def calculate_reward(self, agent: SwarmAgent) -> int:
         if not (agent.committed_to_opinion):
-            return -0.0125
+            return -0.05  # (120 - agent.num_of_cells_observed)
 
         if agent.calculate_opinion() != self.correct_opinion:
-            return -400
+            return -(
+                14400 / agent.num_of_cells_observed
+            )  # (agent.num_of_cells_observed -320)
 
-        return 100
+        return agent.num_of_cells_observed  # (agent.num_of_cells_observed - 120)
 
     def return_action_for_other_agent(self, agent: SwarmAgent):
         if self.model is not None:

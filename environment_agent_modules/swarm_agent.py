@@ -1,25 +1,21 @@
 import random
 import numpy as np
 from dataclasses import dataclass, field, InitVar
-from typing import Any, Dict, List, Tuple, Set, Union
-from .tile_properties import WallType
+from typing import Any, Dict, Tuple, Set, Union
 from .utils import validate_cell
 from helper_files import TRAINED_MODELS_DIRECTORY
 from .swarm_agent_enums import (
     Direction,
     Turn,
-    ObjectType,
-    RelativePosition,
 )
 
 
 @dataclass(repr=False, eq=False)
 class SwarmAgent:
     starting_cell: InitVar[Dict[str, Any]]
-    needs_models_loaded: InitVar[bool]
+    needs_models_loaded: InitVar[bool] = False
     opinion_weighting_method: InitVar[str] = "list_of_weights"
     model_names: InitVar[Dict[str, Union[str, None]]] = {
-        "nav_model": "multi_agent_nav_model",
         "sense_model": "sense_broadcast_model",
         "commit_to_opinion_model": None,
         "dynamic_opinion_model": None,
@@ -60,13 +56,7 @@ class SwarmAgent:
         }[opinion_weighting_method]
 
         if needs_models_loaded:
-            from stable_baselines3 import PPO, DQN
-
-            nav_model = model_names.get("nav_model")
-            if nav_model is not None:
-                self.navigation_model = PPO.load(
-                    f"{TRAINED_MODELS_DIRECTORY}/{nav_model}"
-                )
+            from stable_baselines3 import DQN, PPO
 
             sense_model = model_names.get("sense_model")
             if sense_model is not None:
@@ -144,51 +134,6 @@ class SwarmAgent:
     def turn(self, turn_type: int) -> None:
         self.current_direction_facing = (self.current_direction_facing + turn_type) % 4
 
-    def __call_each_state_function_for_tile(
-        self, tile_walls: List[WallType]
-    ) -> Tuple[int, int]:
-        return {
-            0: lambda _: (ObjectType.NONE.value, RelativePosition.FRONT.value),
-            1: lambda tile_walls: (
-                ObjectType.WALL.value,
-                (self.current_direction_facing - tile_walls[0]) % 4,
-            ),
-            2: lambda tile_walls: (
-                ObjectType.CORNER.value,
-                (
-                    self.current_direction_facing
-                    - [
-                        wall
-                        for wall in tile_walls
-                        if ((self.current_direction_facing - wall) % 4 in [1, 3])
-                    ][0]
-                )
-                % 4
-                + 1,
-            ),
-        }[len(tile_walls)](tile_walls)
-
-    def get_navigation_states(self, tile_grid: np.ndarray) -> Tuple[int, int]:
-        next_tile_coordinates = self.__return_next_cell_coordinate()
-
-        if validate_cell(new_cell=next_tile_coordinates, grid_shape=tile_grid.shape):
-            next_tile_along = tile_grid[next_tile_coordinates]
-            # other agents have precedence when detecting objects on the next tile along
-            if next_tile_along["agent"]:
-                return (
-                    ObjectType.AGENT.value,
-                    RelativePosition.FRONT.value,
-                )
-
-            return self.__call_each_state_function_for_tile(
-                tile_walls=next_tile_along["walls"]
-            )
-
-        # agent is facing into a corner or wall
-        return self.__call_each_state_function_for_tile(
-            tile_walls=tile_grid[self.current_cell]["walls"]
-        )
-
     def perform_navigation_action(self, action: int, tile_grid: np.ndarray) -> None:
         self.add_cell_to_visited_list(self.current_cell)
 
@@ -202,17 +147,6 @@ class SwarmAgent:
         }[action](self, tile_grid)
 
     def choose_navigation_action(self, tile_grid: np.ndarray) -> int:
-        return self.navigation_model.predict(
-            np.array([self.get_navigation_states(tile_grid=tile_grid)])
-        )[0].item()
-
-    def navigate(self, tile_grid: np.ndarray) -> None:
-        self.perform_navigation_action(
-            action=self.choose_navigation_action(tile_grid=tile_grid),
-            tile_grid=tile_grid,
-        )
-
-    def new_choose_navigation_action(self, tile_grid: np.ndarray) -> int:
         next_tile_coordinates = self.__return_next_cell_coordinate()
 
         if validate_cell(new_cell=next_tile_coordinates, grid_shape=tile_grid.shape):
@@ -231,9 +165,9 @@ class SwarmAgent:
 
         return 1 if tile_walls[0] == self.current_direction_facing else 2
 
-    def new_navigate(self, tile_grid: np.ndarray) -> None:
+    def navigate(self, tile_grid: np.ndarray) -> None:
         self.perform_navigation_action(
-            action=self.new_choose_navigation_action(tile_grid=tile_grid),
+            action=self.choose_navigation_action(tile_grid=tile_grid),
             tile_grid=tile_grid,
         )
 
@@ -248,8 +182,10 @@ class SwarmAgent:
         return self.opinion_weights[opinion]
 
     def return_opinion_weight_based_on_equation(self, opinion: int) -> float:
-        return self.max_new_opinion_weighting * (
-            1 - abs(self.calculated_collective_opinion - opinion)
+        return round(
+            self.max_new_opinion_weighting
+            * (1 - abs(opinion - self.calculated_collective_opinion)),
+            4,
         )
 
     def update_collective_opinion(self, opinion: int) -> None:
@@ -261,9 +197,11 @@ class SwarmAgent:
             k=1,
         )[0]
 
-        self.calculated_collective_opinion = (
-            (1 - opinion_weight) * self.calculated_collective_opinion
-        ) + (opinion_weight * opinion)
+        self.calculated_collective_opinion = round(
+            ((1 - opinion_weight) * self.calculated_collective_opinion)
+            + (opinion_weight * opinion),
+            6,
+        )
 
     def recieve_local_opinions(self, tile_grid: np.ndarray):
         current_y, current_x = self.current_cell
@@ -283,7 +221,7 @@ class SwarmAgent:
         ]
 
         for tile in local_area.flat:
-            if tile["agent"]:
+            if tile["agent"] and tile["agent"] != self:
                 recieved_opinion = tile["agent"].return_opinion()
                 if recieved_opinion is not None:
                     self.update_collective_opinion(recieved_opinion)
@@ -355,7 +293,6 @@ class SwarmAgent:
     def perform_decision_navigate_opinion_update_cycle(
         self, tile_grid: np.ndarray
     ) -> None:
-
         if not (self.committed_to_opinion):
             self.decide_to_sense_or_broadcast()
             self.navigate_and_recieve_opinions(tile_grid=tile_grid)

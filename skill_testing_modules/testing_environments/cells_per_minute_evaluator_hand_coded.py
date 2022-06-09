@@ -25,9 +25,7 @@ class CellsPerMinuteEvaluatorHandCoded:
 
     def step(self):
         for agent in self.swarm_agents:
-            agent.perform_navigation_action(
-                action=random.randint(0, 2), tile_grid=self.tile_grid
-            )
+            agent.navigate(self.tile_grid)
 
         self.num_of_steps += 1
 

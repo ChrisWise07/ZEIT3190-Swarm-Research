@@ -29,6 +29,9 @@ class DynamicOpinionWeightEvaluator:
         max_num_of_steps: int,
         max_new_opinion_weighting: float,
         opinion_weighting_method: str,
+        num_of_malicious_agents: int,
+        sensing_noise: float,
+        communication_noise: float,
         **kwargs,
     ):
         self.width, self.height = width, height
@@ -39,6 +42,9 @@ class DynamicOpinionWeightEvaluator:
         self.max_num_of_steps = max_num_of_steps
         self.max_new_opinion_weighting = max_new_opinion_weighting
         self.opinion_weighting_method = opinion_weighting_method
+        self.num_of_malicious_agents = num_of_malicious_agents
+        self.sensing_noise = sensing_noise
+        self.communication_noise = communication_noise
 
     def step(self):
         for agent in self.swarm_agents:
@@ -50,58 +56,56 @@ class DynamicOpinionWeightEvaluator:
 
         self.number_of_steps += 1
 
+        if self.opinion_weighting_method == "equation_based":
+
+            correct_opinion_weight = np.array(
+                [
+                    agent.return_opinion_weight_based_on_equation(self.correct_opinion)
+                    for agent in self.swarm_agents
+                ]
+            )
+
+            incorrect_opinion_weights = np.array(
+                [
+                    agent.return_opinion_weight_based_on_equation(
+                        (self.correct_opinion + 1) % 2
+                    )
+                    for agent in self.swarm_agents
+                ]
+            )
+
+        else:
+            correct_opinion_weight = np.array(
+                [
+                    agent.opinion_weights[self.correct_opinion]
+                    for agent in self.swarm_agents
+                ]
+            )
+
+            incorrect_opinion_weights = np.array(
+                [
+                    agent.opinion_weights[(self.correct_opinion + 1) % 2]
+                    for agent in self.swarm_agents
+                ]
+            )
+
+        calculated_collective_opinions = np.array(
+            [agent.calculated_collective_opinion for agent in self.swarm_agents]
+        )
+
+        wandb.log(
+            {
+                "average_distance_from_optimal_weighting": np.mean(
+                    (self.max_new_opinion_weighting - correct_opinion_weight)
+                    + incorrect_opinion_weights
+                ),
+                "average_collective_opinion_distance_from_correct_opinion": np.mean(
+                    abs(self.correct_opinion - calculated_collective_opinions)
+                ),
+            }
+        )
+
         if self.number_of_steps == self.max_num_of_steps:
-
-            if self.opinion_weighting_method == "equation_based":
-
-                correct_opinion_weight = np.array(
-                    [
-                        agent.return_opinion_weight_based_on_equation(
-                            self.correct_opinion
-                        )
-                        for agent in self.swarm_agents
-                    ]
-                )
-
-                incorrect_opinion_weights = np.array(
-                    [
-                        agent.return_opinion_weight_based_on_equation(
-                            (self.correct_opinion + 1) % 2
-                        )
-                        for agent in self.swarm_agents
-                    ]
-                )
-
-            else:
-                correct_opinion_weight = np.array(
-                    [
-                        agent.opinion_weights[self.correct_opinion]
-                        for agent in self.swarm_agents
-                    ]
-                )
-
-                incorrect_opinion_weights = np.array(
-                    [
-                        agent.opinion_weights[(self.correct_opinion + 1) % 2]
-                        for agent in self.swarm_agents
-                    ]
-                )
-
-            calculated_collective_opinions = np.array(
-                [agent.calculated_collective_opinion for agent in self.swarm_agents]
-            )
-
-            wandb.log(
-                {
-                    "average_distance_from_optimal_weighting": np.mean(
-                        (self.max_new_opinion_weighting - correct_opinion_weight)
-                        + incorrect_opinion_weights
-                    ),
-                    "average_collective_opinion_distance_from_correct_opinion": np.mean(
-                        abs(self.correct_opinion - calculated_collective_opinions)
-                    ),
-                }
-            )
             return True
 
     def reset(self):

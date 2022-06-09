@@ -1,4 +1,5 @@
 import os
+import random
 import sys
 import wandb
 import numpy as np
@@ -28,6 +29,7 @@ class CommitToOpinionEvaluator:
         environment_type_name: str,
         ratio_of_white_to_black_tiles: float,
         eval_model_name: str,
+        commitment_threshold: float,
         **kwargs,
     ):
         self.width, self.height = width, height
@@ -35,20 +37,33 @@ class CommitToOpinionEvaluator:
         self.max_num_of_steps = max_num_of_steps
         self.environment_type = environment_type_map[environment_type_name]
         self.ratio_of_white_to_black_tiles = ratio_of_white_to_black_tiles
-        self.eval_model_name = eval_model_name
+        self.eval_model_name = None
+        self.commitment_threshold = commitment_threshold
 
     def set_time_to_first_commit(self, pos: int, time: int):
         self.time_to_first_commit[pos] = time
 
+    def make_commitment_decision(self, agent: SwarmAgent):
+        if self.eval_model_name is not None:
+            agent.decide_if_to_commit()
+        else:
+            if self.num_steps > 60:
+                agent.committed_to_opinion = random.choices(
+                    [0, 1], [0.95, 0.05], k=1
+                ).pop(0)
+            # if (
+            #     abs(agent.calculate_opinion() - agent.calculated_collective_opinion)
+            #     < self.commitment_threshold
+            # ):
+            #     agent.committed_to_opinion = True
+
     def step(self):
         for pos, agent in enumerate(self.swarm_agents):
             if not agent.committed_to_opinion:
-                agent.decide_if_to_commit()
+                self.make_commitment_decision(agent)
                 if agent.committed_to_opinion:
                     self.agents_committed += 1
-                    self.set_time_to_first_commit(
-                        pos, self.num_steps / SECONDS_IN_MINUTE
-                    )
+                    self.set_time_to_first_commit(pos, self.num_steps)
 
             agent.perform_decision_navigate_opinion_update_cycle(
                 tile_grid=self.tile_grid
@@ -56,7 +71,10 @@ class CommitToOpinionEvaluator:
 
         self.num_steps += 1
 
-        if self.agents_committed == self.num_of_swarm_agents:
+        if (
+            self.agents_committed == self.num_of_swarm_agents
+            or self.num_steps == self.max_num_of_steps
+        ):
             correct_commitments_count = 0
 
             for agent in self.swarm_agents:
@@ -65,13 +83,19 @@ class CommitToOpinionEvaluator:
 
             wandb.log(
                 {
-                    "time_taken": np.average(self.time_to_first_commit),
+                    "time_taken": np.average(
+                        self.time_to_first_commit / SECONDS_IN_MINUTE
+                    ),
                     "percentage_of_correctly_commited_agents": (
                         correct_commitments_count / self.num_of_swarm_agents
                     ),
+                    "total_number_of_commited_agents": self.agents_committed,
                 }
             )
+
             return True
+
+        return False
 
     def reset(self):
         self.tile_grid = self.environment_type(
@@ -109,5 +133,4 @@ class CommitToOpinionEvaluator:
         ]
 
         self.agents_committed = 0
-        self.percentage_with_correct_opinions = 0.0
         self.time_to_first_commit = np.zeros(self.num_of_swarm_agents)

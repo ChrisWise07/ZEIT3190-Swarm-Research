@@ -10,29 +10,29 @@ def return_coordinate_to_walls_dict(width: int, height: int) -> RegexDict:
     return RegexDict(
         {
             # top left corner
-            "(0, 0)": [WallType.LEFT_WALL.value, WallType.TOP_WALL.value],
+            "^0,0": [WallType.LEFT_WALL.value, WallType.TOP_WALL.value],
             # top right corner
-            f"(0, {(width - 1)})": [WallType.TOP_WALL.value, WallType.RIGHT_WALL.value],
+            f"^0,{width - 1}": [WallType.TOP_WALL.value, WallType.RIGHT_WALL.value],
             # bottom right corner
-            f"({(height - 1)}, {(width - 1)})": [
+            f"{height - 1},{width - 1}": [
                 WallType.RIGHT_WALL.value,
                 WallType.BOTTOM_WALL.value,
             ],
             # bottom left corner
-            f"({(height - 1)}, 0)": [
+            f"{height - 1},0": [
                 WallType.BOTTOM_WALL.value,
                 WallType.LEFT_WALL.value,
             ],
             # top_edge
-            "(0, .)": [WallType.TOP_WALL.value],
+            "^0,.": [WallType.TOP_WALL.value],
             # left_wall
-            "(., 0)": [WallType.LEFT_WALL.value],
+            ".,0$": [WallType.LEFT_WALL.value],
             # right_wall
-            f"(., {(width - 1)})": [WallType.RIGHT_WALL.value],
+            f".,{width - 1}": [WallType.RIGHT_WALL.value],
             # bottom_edge
-            f"({(height - 1)}, .)": [WallType.BOTTOM_WALL.value],
+            f"{height - 1},.": [WallType.BOTTOM_WALL.value],
             # all other tiles
-            "(., .)": [],
+            "\d,\d": [],
         }
     )
 
@@ -58,7 +58,6 @@ def non_clustered_environment(
     tile_walls_to_coordinates_map: Dict[str, List[int]],
 ):
     random_numbers_between_0_1 = np.random.rand(height, width)
-
     for row in range(height):
         for column in range(width):
             if (
@@ -68,10 +67,9 @@ def non_clustered_environment(
                 colour = TileColour.WHITE.value
             else:
                 colour = TileColour.BLACK.value
-
             tile_grid[(row, column)] = tile_creator(
                 colour=colour,
-                walls=tile_walls_to_coordinates_map.get(str((row, column))),
+                walls=tile_walls_to_coordinates_map.get(f"{row},{column}"),
                 coordinate=(row, column),
             )
 
@@ -106,7 +104,7 @@ def clustered_environment(
 
             tile_grid[(row, column)] = tile_creator(
                 colour=colour,
-                walls=tile_walls_to_coordinates_map.get(str((row, column))),
+                walls=tile_walls_to_coordinates_map.get(f"{row},{column}"),
                 coordinate=(row, column),
             )
 

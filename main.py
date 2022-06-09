@@ -179,6 +179,14 @@ parser.add_argument(
     default=0.0,
     help=("Controls the amount of noise added to the communication (default=0.0)"),
 )
+parser.add_argument(
+    "--commitment_threshold",
+    type=float,
+    default=0.05,
+    help=(
+        "Controls the threshold which sets the level when the difference between collective opinion and agent opinion is below the agent commits (default=0.05)"
+    ),
+)
 
 args = parser.parse_args()
 

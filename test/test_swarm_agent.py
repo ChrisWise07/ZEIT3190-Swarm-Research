@@ -355,227 +355,6 @@ class swarm_agent_tester(unittest.TestCase):
                 ),
             )
 
-    def test_agent_returns_correct_state_facing_up_at_top_left_corner(self):
-        self.state_tester(
-            correct_navigation_states=[
-                ObjectType.CORNER,
-                RelativePosition.LEFT_FRONT,
-            ],
-            obj_description="top left corner",
-            agent_direction=Direction.UP,
-        )
-
-    def test_agent_returns_correct_state_facing_right_at_top_left_corner(self):
-        self.state_tester(
-            correct_navigation_states=[
-                ObjectType.WALL,
-                RelativePosition.LEFT,
-            ],
-            obj_description="top left corner",
-        )
-
-    def test_agent_returns_correct_state_facing_down_at_top_left_corner(self):
-        self.state_tester(
-            correct_navigation_states=[
-                ObjectType.WALL,
-                RelativePosition.RIGHT,
-            ],
-            obj_description="top left corner",
-            agent_direction=Direction.DOWN,
-        )
-
-    def test_agent_returns_correct_state_facing_left_at_top_left_corner(self):
-        self.state_tester(
-            correct_navigation_states=[
-                ObjectType.CORNER,
-                RelativePosition.RIGHT_FRONT,
-            ],
-            obj_description="top left corner",
-            agent_direction=Direction.LEFT,
-        )
-
-    def test_agent_returns_correct_state_facing_down_at_top_wall(self):
-        self.state_tester(
-            correct_navigation_states=[
-                ObjectType.NONE,
-                RelativePosition.FRONT,
-            ],
-            obj_description="top wall",
-            agent_direction=Direction.DOWN,
-            different_starting_cell=(0, 1),
-        )
-
-    def test_agent_returns_correct_state_facing_down_at_bottom_wall(self):
-        self.state_tester(
-            correct_navigation_states=[
-                ObjectType.WALL,
-                RelativePosition.FRONT,
-            ],
-            obj_description="bottom wall",
-            agent_direction=Direction.DOWN,
-            different_starting_cell=(4, 1),
-        )
-
-    def test_agent_returns_correct_state_facing_away_from_left_wall(self):
-        self.state_tester(
-            correct_navigation_states=[
-                ObjectType.NONE,
-                RelativePosition.FRONT,
-            ],
-            obj_description="left wall",
-            agent_direction=Direction.RIGHT,
-            different_starting_cell=(1, 0),
-        )
-
-    def test_agent_returns_correct_state_facing_up_left_of_right_wall(self):
-        self.state_tester(
-            correct_navigation_states=[
-                ObjectType.CORNER,
-                RelativePosition.RIGHT_FRONT,
-            ],
-            obj_description="right wall",
-            agent_direction=Direction.UP,
-            different_starting_cell=(1, 4),
-        )
-
-    def test_agent_returns_correct_state_facing_up_left_of_right_wall_two_below_corners(
-        self,
-    ):
-        self.state_tester(
-            correct_navigation_states=[
-                ObjectType.WALL,
-                RelativePosition.RIGHT,
-            ],
-            obj_description="right wall",
-            agent_direction=Direction.UP,
-            different_starting_cell=(2, 4),
-        )
-
-    def test_agent_returns_correct_state_facing_down_left_of_right_wall(self):
-        self.state_tester(
-            correct_navigation_states=[
-                ObjectType.WALL,
-                RelativePosition.LEFT,
-            ],
-            obj_description="right wall",
-            agent_direction=Direction.DOWN,
-            different_starting_cell=(1, 4),
-        )
-
-    def test_agent_returns_correct_state_facing_empty_tiles(self):
-        self.state_tester(
-            correct_navigation_states=[
-                ObjectType.NONE,
-                RelativePosition.FRONT,
-            ],
-            obj_description="None",
-            agent_direction=Direction.UP,
-            different_starting_cell=(2, 2),
-        )
-
-    def test_agent_returns_correct_state_when_one_tile_below_and_facing_top_wall(self):
-        self.state_tester(
-            correct_navigation_states=[
-                ObjectType.WALL,
-                RelativePosition.FRONT,
-            ],
-            obj_description="top wall",
-            agent_direction=Direction.UP,
-            different_starting_cell=(1, 1),
-        )
-
-    def test_agent_returns_correct_state_when_one_tile_left_and_facing_right_wall(self):
-        self.state_tester(
-            correct_navigation_states=[
-                ObjectType.WALL,
-                RelativePosition.FRONT,
-            ],
-            obj_description="right wall",
-            agent_direction=Direction.RIGHT,
-            different_starting_cell=(1, 3),
-        )
-
-    def test_agent_returns_correct_state_when_one_tile_right_and_facing_away_right_wall(
-        self,
-    ):
-        self.state_tester(
-            correct_navigation_states=[
-                ObjectType.NONE,
-                RelativePosition.FRONT,
-            ],
-            obj_description="none",
-            agent_direction=Direction.LEFT,
-            different_starting_cell=(1, 3),
-        )
-
-    def test_agent_returns_correct_state_facing_top_left_corner_with_agent_on_right(
-        self,
-    ):
-        SwarmAgent(starting_cell=self.tiled_enviro[(0, 1)])
-
-        self.state_tester(
-            correct_navigation_states=[
-                ObjectType.CORNER,
-                RelativePosition.LEFT_FRONT,
-            ],
-            obj_description="top left corner",
-            agent_direction=Direction.UP,
-        )
-
-    def test_agent_returns_correct_state_at_top_left_corner_facing_agent_on_right(
-        self,
-    ):
-        SwarmAgent(starting_cell=self.tiled_enviro[(0, 1)])
-
-        self.state_tester(
-            correct_navigation_states=[
-                ObjectType.AGENT,
-                RelativePosition.FRONT,
-            ],
-            obj_description="agent",
-            agent_direction=Direction.RIGHT,
-        )
-
-    def test_agent_returns_correct_state_at_top_left_corner_but_facing_away_from_agent(
-        self,
-    ):
-        SwarmAgent(starting_cell=self.tiled_enviro[(0, 1)])
-
-        self.state_tester(
-            correct_navigation_states=[
-                ObjectType.CORNER,
-                RelativePosition.RIGHT_FRONT,
-            ],
-            obj_description="top left corner",
-            agent_direction=Direction.LEFT,
-        )
-
-    def test_agent_returns_correct_state_facing_agent_on_an_empty_square(self):
-        SwarmAgent(starting_cell=self.tiled_enviro[(0, 1)])
-
-        self.state_tester(
-            correct_navigation_states=[
-                ObjectType.AGENT,
-                RelativePosition.FRONT,
-            ],
-            obj_description="agent",
-            agent_direction=Direction.UP,
-            different_starting_cell=(1, 1),
-        )
-
-    def test_agent_returns_correct_state_facing_agent_on_left_wall_square(self):
-        SwarmAgent(starting_cell=self.tiled_enviro[(1, 1)])
-
-        self.state_tester(
-            correct_navigation_states=[
-                ObjectType.AGENT,
-                RelativePosition.FRONT,
-            ],
-            obj_description="agent",
-            agent_direction=Direction.RIGHT,
-            different_starting_cell=(1, 0),
-        )
-
     def return_sense_tester_agent(
         self, starting_cell: Dict[str, any], sense: bool
     ) -> SwarmAgent:
@@ -711,16 +490,6 @@ class swarm_agent_tester(unittest.TestCase):
             self.swarm_agent.return_opinion(), 0, "return_opinion should be 0 for black"
         )
 
-    def test_update_internal_collective_opinion(self):
-        self.swarm_agent.dynamic_model_based_collective_opinion_update(1)
-        self.swarm_agent.dynamic_model_based_collective_opinion_update(0)
-        self.assertAlmostEqual(
-            self.swarm_agent.calculated_collective_opinion,
-            0.495,
-            msg="internal_collective_opinion should be 0.495",
-            places=3,
-        )
-
     def test_recieve_local_opinions_all_filled(self):
         self.swarm_agent.leave_cell(self.tiled_enviro[(0, 0)])
         swarm_agent = SwarmAgent(starting_cell=self.tiled_enviro[(1, 1)])
@@ -741,7 +510,7 @@ class swarm_agent_tester(unittest.TestCase):
 
         self.assertAlmostEqual(
             swarm_agent.calculated_collective_opinion,
-            0.448156395,
+            0.448157,
             msg="internal_collective_opinion should be 0.495",
             places=9,
         )
@@ -819,6 +588,118 @@ class swarm_agent_tester(unittest.TestCase):
             msg="internal_collective_opinion should be 0.45",
             places=9,
         )
+
+    def test_recieve_local_opinions_in_bottom_right_corner(self):
+        self.swarm_agent.leave_cell(self.tiled_enviro[(0, 0)])
+
+        top_left_swarm_agent = SwarmAgent(
+            starting_cell=self.tiled_enviro[(0, 0)], sensing=0
+        )
+
+        bottom_right_swarm_agent = SwarmAgent(
+            starting_cell=self.tiled_enviro[(4, 4)], sensing=1
+        )
+
+        other_swarm_agent = SwarmAgent(
+            starting_cell=self.tiled_enviro[(3, 4)], sensing=0
+        )
+
+        top_left_swarm_agent.num_of_white_cells_observed += 3
+        top_left_swarm_agent.num_of_cells_observed += 3
+        other_swarm_agent.num_of_cells_observed += 1
+
+        bottom_right_swarm_agent.recieve_local_opinions(tile_grid=self.tiled_enviro)
+
+        self.assertAlmostEqual(
+            bottom_right_swarm_agent.calculated_collective_opinion,
+            0.45,
+            msg="internal_collective_opinion should be 0.45",
+            places=9,
+        )
+
+    def test_swarm_agent_equation_based_opinion_weights(self):
+        self.swarm_agent.calculated_collective_opinion = 0.75
+        self.assertEqual(
+            self.swarm_agent.return_opinion_weight_based_on_equation(1), 0.075
+        )
+        self.swarm_agent.calculated_collective_opinion = 0.25
+        self.assertEqual(
+            self.swarm_agent.return_opinion_weight_based_on_equation(1), 0.025
+        )
+        self.swarm_agent.calculated_collective_opinion = 0.75
+        self.assertEqual(
+            self.swarm_agent.return_opinion_weight_based_on_equation(0), 0.025
+        )
+        self.swarm_agent.calculated_collective_opinion = 0.25
+        self.assertEqual(
+            self.swarm_agent.return_opinion_weight_based_on_equation(0), 0.075
+        )
+
+    def test_swarm_agent_equation_based_opinion_weights_with_different_opinion_weighting(
+        self,
+    ):
+        self.swarm_agent.max_new_opinion_weighting = 0.25
+        self.swarm_agent.calculated_collective_opinion = 0.75
+        self.assertEqual(
+            self.swarm_agent.return_opinion_weight_based_on_equation(1), 0.1875
+        )
+        self.swarm_agent.calculated_collective_opinion = 0.25
+        self.assertEqual(
+            self.swarm_agent.return_opinion_weight_based_on_equation(1), 0.0625
+        )
+        self.swarm_agent.calculated_collective_opinion = 0.75
+        self.assertEqual(
+            self.swarm_agent.return_opinion_weight_based_on_equation(0), 0.0625
+        )
+        self.swarm_agent.calculated_collective_opinion = 0.25
+        self.assertEqual(
+            self.swarm_agent.return_opinion_weight_based_on_equation(0), 0.1875
+        )
+
+    def test_swarm_agent_equation_based_opinion_weights_update_collective_opinion(self):
+        temp_swarm_agent = SwarmAgent(
+            starting_cell=self.tiled_enviro[(0, 1)],
+            opinion_weighting_method="equation_based",
+        )
+        temp_swarm_agent.calculated_collective_opinion = 0.75
+        temp_swarm_agent.update_collective_opinion(1)
+        self.assertEqual(temp_swarm_agent.calculated_collective_opinion, 0.76875)
+
+        temp_swarm_agent.calculated_collective_opinion = 0.25
+        temp_swarm_agent.update_collective_opinion(1)
+        self.assertEqual(temp_swarm_agent.calculated_collective_opinion, 0.26875)
+
+        temp_swarm_agent.calculated_collective_opinion = 0.75
+        temp_swarm_agent.update_collective_opinion(0)
+        self.assertEqual(temp_swarm_agent.calculated_collective_opinion, 0.73125)
+
+        temp_swarm_agent.calculated_collective_opinion = 0.25
+        temp_swarm_agent.update_collective_opinion(0)
+        self.assertEqual(temp_swarm_agent.calculated_collective_opinion, 0.23125)
+
+    def test_swarm_agent_equation_based_opinion_weights_with_different_opinion_weighting_update_collective_opinion(
+        self,
+    ):
+        temp_swarm_agent = SwarmAgent(
+            starting_cell=self.tiled_enviro[(0, 1)],
+            opinion_weighting_method="equation_based",
+            max_new_opinion_weighting=0.25,
+        )
+        temp_swarm_agent.calculated_collective_opinion = 0.75
+        temp_swarm_agent.update_collective_opinion(1)
+        self.assertEqual(temp_swarm_agent.calculated_collective_opinion, 0.796875)
+
+        temp_swarm_agent.calculated_collective_opinion = 0.25
+        temp_swarm_agent.update_collective_opinion(1)
+        self.assertEqual(temp_swarm_agent.calculated_collective_opinion, 0.296875)
+
+        temp_swarm_agent.calculated_collective_opinion = 0.75
+        temp_swarm_agent.update_collective_opinion(0)
+        self.assertEqual(temp_swarm_agent.calculated_collective_opinion, 0.703125)
+
+        temp_swarm_agent.calculated_collective_opinion = 0.25
+        temp_swarm_agent.update_collective_opinion(0)
+        self.assertEqual(temp_swarm_agent.calculated_collective_opinion, 0.203125)
 
 
 if __name__ == "__main__":

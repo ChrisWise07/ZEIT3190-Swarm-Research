@@ -112,19 +112,19 @@ def move_and_show_window(x: int, y: int, winname: str, img: np.ndarray) -> None:
 
 
 def main() -> None:
-    tile_grid = create_nonclustered_tile_grid(20, 20, ratio_of_white_to_black_tiles=0.6)
+    tile_grid = create_nonclustered_tile_grid(25, 25, ratio_of_white_to_black_tiles=0.6)
 
     list_of_locations = return_list_of_coordinates_column_by_columns(
-        num_of_columns=20, num_of_rows=20
+        num_of_columns=25, num_of_rows=25
     )
 
     swarm_agents = [
         SwarmAgent(
             starting_cell=(tile_grid[list_of_locations.pop(0)]),
-            current_direction_facing=0,
+            current_direction_facing=1,
             needs_models_loaded=True,
         )
-        for _ in range(20)
+        for _ in range(25)
     ]
 
     display_location = (
@@ -137,7 +137,7 @@ def main() -> None:
 
         for agent in swarm_agents:
             draw_swarm_agent_on_tile_grid(img, agent)
-            agent.new_navigate(tile_grid)
+            agent.navigate(tile_grid)
 
         move_and_show_window(*display_location, winname="Tile Grid", img=img)
 
