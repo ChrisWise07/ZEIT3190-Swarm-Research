@@ -1,12 +1,15 @@
 import random
 import numpy as np
 from dataclasses import dataclass, field, InitVar
-from typing import Any, Dict, Tuple, Set, Union
+from typing import Any, Dict, List, Tuple, Set, Union
+from .tile_properties import WallType
 from .utils import validate_cell
 from helper_files import TRAINED_MODELS_DIRECTORY
 from .swarm_agent_enums import (
     Direction,
     Turn,
+    ObjectType,
+    RelativePosition,
 )
 
 
@@ -16,6 +19,7 @@ class SwarmAgent:
     needs_models_loaded: InitVar[bool] = False
     opinion_weighting_method: InitVar[str] = "list_of_weights"
     model_names: InitVar[Dict[str, Union[str, None]]] = {
+        "nav_model": "multi_agent_nav_model",
         "sense_model": "sense_broadcast_model",
         "commit_to_opinion_model": None,
         "dynamic_opinion_model": None,
@@ -57,6 +61,12 @@ class SwarmAgent:
 
         if needs_models_loaded:
             from stable_baselines3 import DQN, PPO
+
+            nav_model = model_names.get("nav_model")
+            if nav_model is not None:
+                self.navigation_model = PPO.load(
+                    f"{TRAINED_MODELS_DIRECTORY}/{nav_model}"
+                )
 
             sense_model = model_names.get("sense_model")
             if sense_model is not None:
@@ -168,6 +178,62 @@ class SwarmAgent:
     def navigate(self, tile_grid: np.ndarray) -> None:
         self.perform_navigation_action(
             action=self.choose_navigation_action(tile_grid=tile_grid),
+            tile_grid=tile_grid,
+        )
+
+    def __call_each_state_function_for_tile(
+        self, tile_walls: List[WallType]
+    ) -> Tuple[int, int]:
+        return {
+            0: lambda _: (ObjectType.NONE.value, RelativePosition.FRONT.value),
+            1: lambda tile_walls: (
+                ObjectType.WALL.value,
+                (self.current_direction_facing - tile_walls[0]) % 4,
+            ),
+            2: lambda tile_walls: (
+                ObjectType.CORNER.value,
+                (
+                    self.current_direction_facing
+                    - [
+                        wall
+                        for wall in tile_walls
+                        if ((self.current_direction_facing - wall) % 4 in [1, 3])
+                    ][0]
+                )
+                % 4
+                + 1,
+            ),
+        }[len(tile_walls)](tile_walls)
+
+    def get_navigation_states(self, tile_grid: np.ndarray) -> Tuple[int, int]:
+        next_tile_coordinates = self.__return_next_cell_coordinate()
+
+        if validate_cell(new_cell=next_tile_coordinates, grid_shape=tile_grid.shape):
+            next_tile_along = tile_grid[next_tile_coordinates]
+            # other agents have precedence when detecting objects on the next tile along
+            if next_tile_along["agent"]:
+                return (
+                    ObjectType.AGENT.value,
+                    RelativePosition.FRONT.value,
+                )
+
+            return self.__call_each_state_function_for_tile(
+                tile_walls=next_tile_along["walls"]
+            )
+
+        # agent is facing into a corner or wall
+        return self.__call_each_state_function_for_tile(
+            tile_walls=tile_grid[self.current_cell]["walls"]
+        )
+
+    def model_choose_navigation_action(self, tile_grid: np.ndarray) -> int:
+        return self.navigation_model.predict(
+            np.array([self.get_navigation_states(tile_grid=tile_grid)])
+        )[0].item()
+
+    def model_navigate(self, tile_grid: np.ndarray) -> None:
+        self.perform_navigation_action(
+            action=self.model_choose_navigation_action(tile_grid=tile_grid),
             tile_grid=tile_grid,
         )
 

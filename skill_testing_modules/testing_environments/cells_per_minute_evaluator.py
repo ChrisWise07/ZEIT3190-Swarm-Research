@@ -2,12 +2,15 @@ import os
 import sys
 import numpy as np
 import wandb
-import random
 
 ROOT_DIRECTORY = os.path.dirname(os.getcwd())
 sys.path.append(ROOT_DIRECTORY)
 
 from environment_agent_modules import create_nonclustered_tile_grid, SwarmAgent
+
+from helper_files.utils import (
+    return_list_of_coordinates_column_by_columns,
+)
 
 
 class CellsPerMinuteEvaluator:
@@ -27,7 +30,10 @@ class CellsPerMinuteEvaluator:
 
     def step(self):
         for agent in self.swarm_agents:
-            agent.navigate(tile_grid=self.tile_grid)
+            if self.eval_model_name:
+                agent.model_navigate(tile_grid=self.tile_grid)
+            else:
+                agent.navigate(tile_grid=self.tile_grid)
 
         self.num_of_steps += 1
 
@@ -70,20 +76,21 @@ class CellsPerMinuteEvaluator:
 
         self.num_of_steps = 0
 
-        all_possible_tiles = []
-
-        for column in range(self.width):
-            for row in range(self.height):
-                all_possible_tiles.append((row, column))
+        list_of_coordinates_to_distribute_agents_over = (
+            return_list_of_coordinates_column_by_columns(
+                num_of_columns=self.width, num_of_rows=self.height
+            )
+        )
 
         self.swarm_agents = [
             SwarmAgent(
-                starting_cell=(self.tile_grid[all_possible_tiles.pop(0)]),
+                starting_cell=self.tile_grid[
+                    list_of_coordinates_to_distribute_agents_over.pop(0)
+                ],
                 current_direction_facing=1,
                 needs_models_loaded=True,
                 model_names={
                     "nav_model": self.eval_model_name,
-                    "sense_model": "sense_broadcast_model",
                 },
             )
             for _ in range(self.num_of_swarm_agents)
