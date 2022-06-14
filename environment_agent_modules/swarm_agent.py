@@ -17,9 +17,7 @@ from .swarm_agent_enums import (
 class SwarmAgent:
     starting_cell: InitVar[Dict[str, Any]]
     needs_models_loaded: InitVar[bool] = False
-    opinion_weighting_method: InitVar[str] = "list_of_weights"
     model_names: InitVar[Dict[str, Union[str, None]]] = {
-        "nav_model": "multi_agent_nav_model",
         "sense_model": "sense_broadcast_model",
         "commit_to_opinion_model": None,
         "dynamic_opinion_model": None,
@@ -29,6 +27,7 @@ class SwarmAgent:
     max_new_opinion_weighting: float = 0.1
     sensing_noise: float = 0.0
     communication_noise: float = 0.0
+    total_number_of_environment_cells: int = 625
 
     communication_range: int = 1
     sensing: int = 1
@@ -44,7 +43,6 @@ class SwarmAgent:
         self,
         starting_cell: Dict[str, Any],
         needs_models_loaded: bool,
-        opinion_weighting_method: str,
         model_names: Dict[str, Union[str, None]],
     ) -> None:
         self.cells_visited = set()
@@ -54,19 +52,8 @@ class SwarmAgent:
             self.max_new_opinion_weighting,
         ]
 
-        self.opinion_weight_function = {
-            "list_of_weights": self.return_opinion_weight_based_on_opinion_weight_list,
-            "equation_based": self.return_opinion_weight_based_on_equation,
-        }[opinion_weighting_method]
-
         if needs_models_loaded:
             from stable_baselines3 import DQN, PPO
-
-            nav_model = model_names.get("nav_model")
-            if nav_model is not None:
-                self.navigation_model = PPO.load(
-                    f"{TRAINED_MODELS_DIRECTORY}/{nav_model}"
-                )
 
             sense_model = model_names.get("sense_model")
             if sense_model is not None:
@@ -118,11 +105,6 @@ class SwarmAgent:
     def leave_cell(self, tile: Dict) -> None:
         tile["agent"] = None
         self.add_cell_to_visited_list(tile["id"])
-
-    def return_navigation_reward(self) -> int:
-        if self.current_cell in self.cells_visited:
-            return -1 / self.return_num_of_cells_visited()
-        return 1 * self.return_num_of_cells_visited()
 
     def __return_next_cell_coordinate(self) -> Tuple[int, int]:
         return {
@@ -181,71 +163,12 @@ class SwarmAgent:
             tile_grid=tile_grid,
         )
 
-    def __call_each_state_function_for_tile(
-        self, tile_walls: List[WallType]
-    ) -> Tuple[int, int]:
-        return {
-            0: lambda _: (ObjectType.NONE.value, RelativePosition.FRONT.value),
-            1: lambda tile_walls: (
-                ObjectType.WALL.value,
-                (self.current_direction_facing - tile_walls[0]) % 4,
-            ),
-            2: lambda tile_walls: (
-                ObjectType.CORNER.value,
-                (
-                    self.current_direction_facing
-                    - [
-                        wall
-                        for wall in tile_walls
-                        if ((self.current_direction_facing - wall) % 4 in [1, 3])
-                    ][0]
-                )
-                % 4
-                + 1,
-            ),
-        }[len(tile_walls)](tile_walls)
-
-    def get_navigation_states(self, tile_grid: np.ndarray) -> Tuple[int, int]:
-        next_tile_coordinates = self.__return_next_cell_coordinate()
-
-        if validate_cell(new_cell=next_tile_coordinates, grid_shape=tile_grid.shape):
-            next_tile_along = tile_grid[next_tile_coordinates]
-            # other agents have precedence when detecting objects on the next tile along
-            if next_tile_along["agent"]:
-                return (
-                    ObjectType.AGENT.value,
-                    RelativePosition.FRONT.value,
-                )
-
-            return self.__call_each_state_function_for_tile(
-                tile_walls=next_tile_along["walls"]
-            )
-
-        # agent is facing into a corner or wall
-        return self.__call_each_state_function_for_tile(
-            tile_walls=tile_grid[self.current_cell]["walls"]
-        )
-
-    def model_choose_navigation_action(self, tile_grid: np.ndarray) -> int:
-        return self.navigation_model.predict(
-            np.array([self.get_navigation_states(tile_grid=tile_grid)])
-        )[0].item()
-
-    def model_navigate(self, tile_grid: np.ndarray) -> None:
-        self.perform_navigation_action(
-            action=self.model_choose_navigation_action(tile_grid=tile_grid),
-            tile_grid=tile_grid,
-        )
-
     def calculate_opinion(self) -> int:
         return round(self.num_of_white_cells_observed / self.num_of_cells_observed)
 
     def return_opinion(self) -> Union[int, None]:
         if not (self.sensing):
             return self.calculate_opinion()
-
-    def return_opinion_weight_based_on_opinion_weight_list(self, opinion: int) -> float:
-        return self.opinion_weights[opinion]
 
     def return_opinion_weight_based_on_equation(self, opinion: int) -> float:
         return round(
@@ -255,13 +178,13 @@ class SwarmAgent:
         )
 
     def update_collective_opinion(self, opinion: int) -> None:
-        opinion_weight = self.opinion_weight_function(opinion=opinion)
-
         opinion = random.choices(
             [opinion, (opinion + 1) % 2],
             [1 - self.communication_noise, self.communication_noise],
             k=1,
         )[0]
+
+        opinion_weight = self.opinion_weights[opinion]
 
         self.calculated_collective_opinion = round(
             ((1 - opinion_weight) * self.calculated_collective_opinion)
@@ -292,11 +215,20 @@ class SwarmAgent:
                 if recieved_opinion is not None:
                     self.update_collective_opinion(recieved_opinion)
 
+    # def return_sense_broadcast_states(self) -> np.ndarray:
+    #     return np.array(
+    #         (
+    #             self.return_ratio_of_total_environment_cells_observed(),
+    #             abs(self.calculate_opinion() - self.calculated_collective_opinion),
+    #         ),
+    #         dtype=np.float32,
+    #     )
+
     def return_sense_broadcast_states(self) -> np.ndarray:
         opinion = self.calculate_opinion()
         return np.array(
             (
-                self.num_of_cells_observed,
+                self.return_ratio_of_total_environment_cells_observed(),
                 opinion,
                 self.calculated_collective_opinion,
                 abs(self.calculated_collective_opinion - opinion),
@@ -312,11 +244,16 @@ class SwarmAgent:
     def decide_to_sense_or_broadcast(self) -> None:
         self.sensing = self.choose_sense_broadcast_action()
 
+    def return_ratio_of_total_environment_cells_observed(self) -> float:
+        return min(
+            self.num_of_cells_observed / self.total_number_of_environment_cells, 1.0
+        )
+
     def return_commit_decision_states(self) -> np.ndarray:
         return np.array(
             (
-                self.num_of_cells_observed,
-                abs(self.calculated_collective_opinion - self.calculate_opinion()),
+                self.return_ratio_of_total_environment_cells_observed(),
+                abs(self.calculate_opinion() - self.calculated_collective_opinion),
             ),
             dtype=np.float32,
         )

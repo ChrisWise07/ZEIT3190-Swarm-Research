@@ -45,7 +45,7 @@ class CommitToOpinionTrainer(gym.Env):
         self.num_of_swarm_agents = num_of_swarm_agents
         self.random_agent_per_step = random_agent_per_step
 
-        self.environment_type_weighting = [33, 33, 33]
+        self.environment_type_weighting = [33.33, 33.33, 33.33]
         self.model = None
 
         from gym import spaces
@@ -53,7 +53,7 @@ class CommitToOpinionTrainer(gym.Env):
 
         self.action_space = spaces.Discrete(2)
         self.observation_space = spaces.Box(
-            low=0.0, high=float(max_num_of_steps), shape=(2,), dtype=float32
+            low=0.0, high=1.0, shape=(2,), dtype=float32
         )
 
     def set_model(self, model: Union[PPO, DQN]):
@@ -61,14 +61,17 @@ class CommitToOpinionTrainer(gym.Env):
 
     def calculate_reward(self, agent: SwarmAgent) -> int:
         if not (agent.committed_to_opinion):
-            return -0.05  # (120 - agent.num_of_cells_observed)
+            return (
+                -0.05
+            )  # return 50 - (100 * agent.return_ratio_of_total_environment_cells_observed())
 
         if agent.calculate_opinion() != self.correct_opinion:
-            return -(
-                14400 / agent.num_of_cells_observed
-            )  # (agent.num_of_cells_observed -320)
-
-        return agent.num_of_cells_observed  # (agent.num_of_cells_observed - 120)
+            return -5000 / (
+                100 * agent.return_ratio_of_total_environment_cells_observed()
+            )  # return (-100)
+        return (
+            100 * agent.return_ratio_of_total_environment_cells_observed()
+        )  # (100 * agent.return_ratio_of_total_environment_cells_observed()) - 50
 
     def return_action_for_other_agent(self, agent: SwarmAgent):
         if self.model is not None:
@@ -116,7 +119,7 @@ class CommitToOpinionTrainer(gym.Env):
             )
 
             self.environment_type_weighting[self.index_of_environment] = round(
-                (inverse_sigmoid_for_weighting(correct_commitment_ratio * 100))
+                100 - (correct_commitment_ratio * 100)
             )
 
         if self.random_agent_per_step:

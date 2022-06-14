@@ -49,7 +49,7 @@ class SenseBroadcastTrainer(gym.Env):
 
         self.action_space = spaces.Discrete(2)
         self.observation_space = spaces.Box(
-            low=0.0, high=float(width * height), shape=(4,), dtype=float32
+            low=0.0, high=1.0, shape=(4,), dtype=float32
         )
 
     def set_model(self, model: Union[PPO, DQN]):
@@ -59,17 +59,17 @@ class SenseBroadcastTrainer(gym.Env):
         if not agent.sensing:  # agent is broadcasting
             if agent.calculate_opinion() != self.correct_opinion:
                 self.broadcast_false_positives += 1
-                return -(self.width * self.height) / agent.num_of_cells_observed
+                return -2
 
             self.broadcast_true_positives += 1
-            return agent.num_of_cells_observed
+            return 1
 
         if agent.calculate_opinion() != self.correct_opinion:
             self.broadcast_true_negatives += 1
-            return (self.width * self.height) / agent.num_of_cells_observed
+            return -0.01
 
         self.broadcast_false_negatives += 1
-        return -agent.num_of_cells_observed
+        return -0.01
 
     def calculate_broadcast_accuracy(self) -> float:
         return (self.broadcast_true_positives + self.broadcast_true_negatives) / (
@@ -99,10 +99,28 @@ class SenseBroadcastTrainer(gym.Env):
         wandb.log(
             {
                 "broadcast_accuracy": broadcast_accuracy,
-                "broadcast_true_positives": self.broadcast_true_positives,
-                "broadcast_false_positives": self.broadcast_false_positives,
-                "broadcast_true_negatives": self.broadcast_true_negatives,
-                "broadcast_false_negatives": self.broadcast_false_negatives,
+                "percentage_of_correct_opinions_shared": (
+                    (
+                        self.broadcast_true_positives
+                        / (
+                            self.broadcast_true_positives
+                            + self.broadcast_false_negatives
+                        )
+                    )
+                    if (self.broadcast_true_positives + self.broadcast_false_negatives)
+                    else 0.0
+                ),
+                "percentage_of_incorrect_opinions_shared": (
+                    (
+                        self.broadcast_false_positives
+                        / (
+                            self.broadcast_false_positives
+                            + self.broadcast_true_negatives
+                        )
+                    )
+                    if (self.broadcast_false_positives + self.broadcast_true_negatives)
+                    else 0.0
+                ),
             }
         )
 
@@ -125,11 +143,8 @@ class SenseBroadcastTrainer(gym.Env):
         )
 
     def reset(self):
-        from numpy import zeros
-
         self.done = False
         self.num_steps = 0
-        self.decision_correctness_tracker = zeros(self.max_num_steps)
 
         (
             self.index_of_environment,
@@ -153,7 +168,6 @@ class SenseBroadcastTrainer(gym.Env):
                 starting_cell=(
                     self.tile_grid[list_of_coordinates_to_distribute_agents_over.pop(0)]
                 ),
-                needs_models_loaded=True,
                 current_direction_facing=random.randint(0, 3),
             )
             for _ in range(self.num_of_swarm_agents)

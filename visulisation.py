@@ -6,6 +6,7 @@ from environment_agent_modules import (
     create_nonclustered_tile_grid,
     create_clustered_inital_observation_not_useful_tile_grid,
     create_clustered_inital_observation_useful_tile_grid,
+    return_ratio_of_white_to_black_tiles,
     SwarmAgent,
     Direction,
     TileColour,
@@ -112,7 +113,11 @@ def move_and_show_window(x: int, y: int, winname: str, img: np.ndarray) -> None:
 
 
 def main() -> None:
-    tile_grid = create_nonclustered_tile_grid(25, 25, ratio_of_white_to_black_tiles=0.6)
+    tile_grid = create_clustered_inital_observation_useful_tile_grid(
+        38, 38, ratio_of_white_to_black_tiles=0.72
+    )
+
+    print(f"correct opinion: {round(return_ratio_of_white_to_black_tiles(tile_grid))}")
 
     list_of_locations = return_list_of_coordinates_column_by_columns(
         num_of_columns=25, num_of_rows=25
@@ -121,7 +126,7 @@ def main() -> None:
     swarm_agents = [
         SwarmAgent(
             starting_cell=(tile_grid[list_of_locations.pop(0)]),
-            current_direction_facing=1,
+            current_direction_facing=2,
             needs_models_loaded=True,
         )
         for _ in range(25)

@@ -44,18 +44,31 @@ class CommitToOpinionEvaluator:
         self.time_to_first_commit[pos] = time
 
     def make_commitment_decision(self, agent: SwarmAgent):
-        if self.eval_model_name is not None:
-            agent.decide_if_to_commit()
-        else:
-            if self.num_steps > 60:
+        if self.num_steps > 120:
+            if self.eval_model_name is not None:
+                agent.decide_if_to_commit()
+            else:
+                # if self.num_steps > 120:
+                #     agent.committed_to_opinion = random.choices(
+                #         [0, 1], [0.975, 0.025], k=1
+                #     ).pop(0)
+                chance_of_commiting = 0.75 * (
+                    agent.return_ratio_of_total_environment_cells_observed()
+                ) + 0.25 * (
+                    1
+                    - abs(
+                        agent.calculate_opinion() - agent.calculated_collective_opinion
+                    )
+                )
+
                 agent.committed_to_opinion = random.choices(
-                    [0, 1], [0.95, 0.05], k=1
-                ).pop(0)
-            # if (
-            #     abs(agent.calculate_opinion() - agent.calculated_collective_opinion)
-            #     < self.commitment_threshold
-            # ):
-            #     agent.committed_to_opinion = True
+                    [0, 1],
+                    weights=[
+                        100 - (100 * chance_of_commiting),
+                        100 * chance_of_commiting,
+                    ],
+                    k=1,
+                )[0]
 
     def step(self):
         for pos, agent in enumerate(self.swarm_agents):
@@ -78,7 +91,10 @@ class CommitToOpinionEvaluator:
             correct_commitments_count = 0
 
             for agent in self.swarm_agents:
-                if agent.calculate_opinion() == self.correct_opinion:
+                if (
+                    agent.calculate_opinion() == self.correct_opinion
+                    and agent.committed_to_opinion
+                ):
                     correct_commitments_count += 1
 
             wandb.log(
@@ -123,7 +139,6 @@ class CommitToOpinionEvaluator:
                 ),
                 needs_models_loaded=True,
                 model_names={
-                    "nav_model": "multi_agent_nav_model",
                     "sense_model": "sense_broadcast_model",
                     "commit_to_opinion_model": self.eval_model_name,
                 },

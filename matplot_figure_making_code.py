@@ -1,63 +1,77 @@
-import numpy as np
 import matplotlib as mpl
+import matplotlib.pyplot as plt
+import numpy as np
 
 mpl.use("pdf")
-import matplotlib.pyplot as plt
 
 plt.rc("font", family="serif", serif="Times")
 plt.rc("text", usetex=True)
-plt.rc("xtick", labelsize=8)
 plt.rc("ytick", labelsize=8)
-plt.rc("axes", labelsize=6)
+plt.rc("axes", labelsize=8)
 
 # width as measured in inkscape
 width = 3.487
 height = width / 1.618
 
-import numpy as np
-import matplotlib.pyplot as plt
-
-
-# creating the dataset
-data = {
-    "Free region: random action": 42.7,
-    "Free region: after learning skill 1.1": 170.7,
-    "Populated region: after learning skill 1.1": 172.632,
-    "Populated region: after learning skill 1.2": 209.62,
-    "Populated region: navigation algorithm": 205.38,
-}
-courses = list(data.keys())
-values = list(data.values())
-
-fig = plt.figure(figsize=(10, 4))
 
 alpha_value = 0.625
+fig, ax = plt.subplots(figsize=(width, height))
+plt.suptitle(
+    "Percentage of Opinions Shared For Different Algorithms",
+    fontsize=9,
+)
 
-# creating the bar plot
-plt.bar(
-    courses,
-    values,
-    yerr=[14.86, 41.7, 6.82, 3.71, 7.62],
+ax.set_ylim([0.0, 1.0])
+
+x = np.arange(3)
+incorrect_shared = [0.21, 0.20, 0.14]
+incorrect_shared_error = [0.20, 0.08, 0.13]
+correct_shared = [0.5, 0.79, 0.86]
+correct_shared_error = [0.12, 0.15, 0.09]
+
+ax.bar(
+    x - 0.2,
+    incorrect_shared,
+    yerr=incorrect_shared_error,
     align="center",
     alpha=alpha_value,
     ecolor="black",
     capsize=5,
-    color=["b", "g", "r", "c", "m"],
+    color=["r"],
     width=0.4,
 )
-plt.tick_params(labelbottom=False)
-
-plt.ylabel("Number of unique cells visited")
-plt.title(
-    "Total Number of Unique Cells Visited for Different Algorithms",
-    fontsize=8,
+ax.bar(
+    x + 0.2,
+    correct_shared,
+    yerr=correct_shared_error,
+    align="center",
+    alpha=alpha_value,
+    ecolor="black",
+    capsize=5,
+    color=["g"],
+    width=0.4,
 )
+plt.xticks(
+    x,
+    [
+        "Random",
+        "Algorithm",
+        "Skill 2.0",
+    ],
+    fontsize=7,
+)
+plt.yticks(
+    fontsize=7,
+)
+
+plt.ylabel("Percentage of Opinions Shared", fontsize=7)
+
+box = ax.get_position()
+ax.set_position([box.x0, box.y0 + box.height * 0.15, box.width, box.height * 0.85])
+
 colors = {
-    "Free region: random action": "b",
-    "Populated region: after learning skill 1.1": "r",
-    "Populated region: navigation algorithm": "m",
-    "Free region: after learning skill 1.1": "g",
-    "Populated region: after learning skill 1.2": "c",
+    "Incorrect Opinions": "r",
+    "Correct Opinions": "g",
 }
 labels = list(colors.keys())
 handles = [
@@ -68,12 +82,10 @@ plt.legend(
     handles,
     labels,
     loc="upper center",
-    bbox_to_anchor=(0.5, -0.05),
+    bbox_to_anchor=(0.5, -0.15),
     ncol=2,
-    fontsize=5,
+    fontsize=7,
+    handletextpad=0.1,
 )
 
-
-fig.set_size_inches(width, height)
-fig.autofmt_xdate()
 fig.savefig("plot.pdf")
