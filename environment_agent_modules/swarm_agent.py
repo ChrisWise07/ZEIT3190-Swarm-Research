@@ -1,15 +1,12 @@
 import random
 import numpy as np
 from dataclasses import dataclass, field, InitVar
-from typing import Any, Dict, List, Tuple, Set, Union
-from .tile_properties import WallType
+from typing import Any, Dict, Tuple, Set, Union
 from .utils import validate_cell
 from helper_files import TRAINED_MODELS_DIRECTORY
 from .swarm_agent_enums import (
     Direction,
     Turn,
-    ObjectType,
-    RelativePosition,
 )
 
 
@@ -167,14 +164,17 @@ class SwarmAgent:
         return round(self.num_of_white_cells_observed / self.num_of_cells_observed)
 
     def return_opinion(self) -> Union[int, None]:
+        # if not (self.sensing):
+        #     return self.calculate_opinion()
         if not (self.sensing):
-            return self.calculate_opinion()
+            if not (self.committed_to_opinion):
+                return self.calculate_opinion()
+
+            return round(self.calculated_collective_opinion)
 
     def return_opinion_weight_based_on_equation(self, opinion: int) -> float:
-        return round(
-            self.max_new_opinion_weighting
-            * (1 - abs(opinion - self.calculated_collective_opinion)),
-            4,
+        return self.max_new_opinion_weighting * (
+            1 - abs(opinion - self.calculated_collective_opinion)
         )
 
     def update_collective_opinion(self, opinion: int) -> None:
@@ -186,11 +186,9 @@ class SwarmAgent:
 
         opinion_weight = self.opinion_weights[opinion]
 
-        self.calculated_collective_opinion = round(
-            ((1 - opinion_weight) * self.calculated_collective_opinion)
-            + (opinion_weight * opinion),
-            6,
-        )
+        self.calculated_collective_opinion = (
+            (1 - opinion_weight) * self.calculated_collective_opinion
+        ) + (opinion_weight * opinion)
 
     def recieve_local_opinions(self, tile_grid: np.ndarray):
         current_y, current_x = self.current_cell
@@ -214,15 +212,6 @@ class SwarmAgent:
                 recieved_opinion = tile["agent"].return_opinion()
                 if recieved_opinion is not None:
                     self.update_collective_opinion(recieved_opinion)
-
-    # def return_sense_broadcast_states(self) -> np.ndarray:
-    #     return np.array(
-    #         (
-    #             self.return_ratio_of_total_environment_cells_observed(),
-    #             abs(self.calculate_opinion() - self.calculated_collective_opinion),
-    #         ),
-    #         dtype=np.float32,
-    #     )
 
     def return_sense_broadcast_states(self) -> np.ndarray:
         opinion = self.calculate_opinion()
@@ -250,10 +239,13 @@ class SwarmAgent:
         )
 
     def return_commit_decision_states(self) -> np.ndarray:
+        opinion = self.calculate_opinion()
         return np.array(
             (
                 self.return_ratio_of_total_environment_cells_observed(),
-                abs(self.calculate_opinion() - self.calculated_collective_opinion),
+                opinion,
+                self.calculated_collective_opinion,
+                abs(self.calculated_collective_opinion - opinion),
             ),
             dtype=np.float32,
         )

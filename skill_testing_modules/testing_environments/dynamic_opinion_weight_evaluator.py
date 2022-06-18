@@ -8,6 +8,7 @@ sys.path.append(ROOT_DIRECTORY)
 
 from environment_agent_modules import (
     SwarmAgent,
+    MaliciousAgent,
     return_ratio_of_white_to_black_tiles,
 )
 
@@ -37,7 +38,7 @@ class DynamicOpinionWeightEvaluator:
         self.num_of_swarm_agents = num_of_swarm_agents
         self.environment_type = environment_type_map[environment_type_name]
         self.ratio_of_white_to_black_tiles = ratio_of_white_to_black_tiles
-        self.eval_model_name = eval_model_name
+        self.eval_model_name = None
         self.max_new_opinion_weighting = max_new_opinion_weighting
         self.opinion_weighting_method = opinion_weighting_method
         self.num_of_malicious_agents = num_of_malicious_agents
@@ -47,28 +48,31 @@ class DynamicOpinionWeightEvaluator:
     def update_opinion_weight(self, agent: SwarmAgent):
         if self.eval_model_name:
             agent.set_dynamic_opinion_weights()
-            return
-        if self.opinion_weighting_method == "equation_based":
+        elif self.opinion_weighting_method == "equation_based":
             agent.opinion_weights = [
                 agent.return_opinion_weight_based_on_equation(1),
                 agent.return_opinion_weight_based_on_equation(0),
             ]
-            return
-        return
 
     def step(self):
+        for agent in self.malicious_agents:
+            agent.navigate(self.tile_grid)
+
         for agent in self.swarm_agents:
             self.update_opinion_weight(agent)
             agent.decide_to_sense_or_broadcast()
             agent.navigate_and_recieve_opinions(self.tile_grid)
 
         correct_opinion_weight = np.array(
-            [agent.opinion_weights[self.correct_opinion] for agent in self.swarm_agents]
+            [
+                (agent.opinion_weights[self.correct_opinion])
+                for agent in self.swarm_agents
+            ]
         )
 
         incorrect_opinion_weights = np.array(
             [
-                agent.opinion_weights[(self.correct_opinion + 1) % 2]
+                (agent.opinion_weights[(self.correct_opinion + 1) % 2])
                 for agent in self.swarm_agents
             ]
         )
@@ -118,6 +122,18 @@ class DynamicOpinionWeightEvaluator:
                 },
                 current_direction_facing=1,
                 max_new_opinion_weighting=self.max_new_opinion_weighting,
+                total_number_of_environment_cells=self.width * self.height,
             )
             for _ in range(self.num_of_swarm_agents)
+        ]
+
+        self.malicious_agents = [
+            MaliciousAgent(
+                starting_cell=(
+                    self.tile_grid[list_of_coordinates_to_distribute_agents_over.pop(0)]
+                ),
+                malicious_opinion=((self.correct_opinion + 1) % 2),
+                current_direction_facing=1,
+            )
+            for _ in range(self.num_of_malicious_agents)
         ]

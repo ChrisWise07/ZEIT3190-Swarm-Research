@@ -44,43 +44,51 @@ class CommitToOpinionEvaluator:
         self.time_to_first_commit[pos] = time
 
     def make_commitment_decision(self, agent: SwarmAgent):
-        if self.num_steps > 120:
-            if self.eval_model_name is not None:
-                agent.decide_if_to_commit()
-            else:
-                # if self.num_steps > 120:
-                #     agent.committed_to_opinion = random.choices(
-                #         [0, 1], [0.975, 0.025], k=1
-                #     ).pop(0)
-                chance_of_commiting = 0.75 * (
-                    agent.return_ratio_of_total_environment_cells_observed()
-                ) + 0.25 * (
-                    1
-                    - abs(
-                        agent.calculate_opinion() - agent.calculated_collective_opinion
-                    )
-                )
+        # if agent.return_ratio_of_total_environment_cells_observed() > 0.05:
+        if self.eval_model_name is not None:
+            agent.decide_if_to_commit()
+        else:
+            if (
+                agent.calculated_collective_opinion < self.commitment_threshold
+                or (1 - agent.calculated_collective_opinion) < self.commitment_threshold
+            ):
+                agent.committed_to_opinion = True
 
-                agent.committed_to_opinion = random.choices(
-                    [0, 1],
-                    weights=[
-                        100 - (100 * chance_of_commiting),
-                        100 * chance_of_commiting,
-                    ],
-                    k=1,
-                )[0]
+            # # agent.committed_to_opinion = random.choices([0, 1], [0.95, 0.05]).pop(0)
+
+            # chance_of_committing = 0.5 * (
+            #     agent.return_ratio_of_total_environment_cells_observed()
+            #     + (
+            #         1
+            #         - abs(
+            #             agent.calculate_opinion() - agent.calculated_collective_opinion
+            #         )
+            #     )
+            # )
+            # agent.committed_to_opinion = random.choices(
+            #     [0, 1],
+            #     weights=[
+            #         100 - (100 * chance_of_committing),
+            #         100 * chance_of_committing,
+            #     ],
+            # ).pop(0)
 
     def step(self):
         for pos, agent in enumerate(self.swarm_agents):
-            if not agent.committed_to_opinion:
-                self.make_commitment_decision(agent)
-                if agent.committed_to_opinion:
-                    self.agents_committed += 1
-                    self.set_time_to_first_commit(pos, self.num_steps)
+            if agent.return_ratio_of_total_environment_cells_observed() > (
+                1 / self.height
+            ):
+                if not agent.committed_to_opinion:
+                    self.make_commitment_decision(agent)
+                    if agent.committed_to_opinion:
+                        self.agents_committed += 1
+                        self.set_time_to_first_commit(pos, self.num_steps)
 
-            agent.perform_decision_navigate_opinion_update_cycle(
-                tile_grid=self.tile_grid
-            )
+                agent.perform_decision_navigate_opinion_update_cycle(
+                    tile_grid=self.tile_grid
+                )
+            else:
+                agent.navigate(self.tile_grid)
 
         self.num_steps += 1
 
@@ -92,7 +100,7 @@ class CommitToOpinionEvaluator:
 
             for agent in self.swarm_agents:
                 if (
-                    agent.calculate_opinion() == self.correct_opinion
+                    round(agent.calculated_collective_opinion) == self.correct_opinion
                     and agent.committed_to_opinion
                 ):
                     correct_commitments_count += 1
@@ -143,6 +151,7 @@ class CommitToOpinionEvaluator:
                     "commit_to_opinion_model": self.eval_model_name,
                 },
                 current_direction_facing=1,
+                total_number_of_environment_cells=self.width * self.height,
             )
             for _ in range(self.num_of_swarm_agents)
         ]

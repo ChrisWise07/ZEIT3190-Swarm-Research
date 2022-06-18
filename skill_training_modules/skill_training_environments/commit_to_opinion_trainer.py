@@ -53,7 +53,7 @@ class CommitToOpinionTrainer(gym.Env):
 
         self.action_space = spaces.Discrete(2)
         self.observation_space = spaces.Box(
-            low=0.0, high=1.0, shape=(2,), dtype=float32
+            low=0.0, high=1.0, shape=(4,), dtype=float32
         )
 
     def set_model(self, model: Union[PPO, DQN]):
@@ -61,17 +61,12 @@ class CommitToOpinionTrainer(gym.Env):
 
     def calculate_reward(self, agent: SwarmAgent) -> int:
         if not (agent.committed_to_opinion):
-            return (
-                -0.05
-            )  # return 50 - (100 * agent.return_ratio_of_total_environment_cells_observed())
+            return -0.005
 
-        if agent.calculate_opinion() != self.correct_opinion:
-            return -5000 / (
-                100 * agent.return_ratio_of_total_environment_cells_observed()
-            )  # return (-100)
-        return (
-            100 * agent.return_ratio_of_total_environment_cells_observed()
-        )  # (100 * agent.return_ratio_of_total_environment_cells_observed()) - 50
+        if round(agent.calculated_collective_opinion) != self.correct_opinion:
+            return -400
+
+        return 100
 
     def return_action_for_other_agent(self, agent: SwarmAgent):
         if self.model is not None:
@@ -91,6 +86,8 @@ class CommitToOpinionTrainer(gym.Env):
 
             if agent.committed_to_opinion and not self.time_to_first_commit[pos]:
                 self.set_time_to_first_commit(pos, self.num_steps)
+                if round(agent.calculated_collective_opinion) == self.correct_opinion:
+                    self.correct_commitments[pos] = 1
 
             agent.perform_decision_navigate_opinion_update_cycle(self.tile_grid)
 
@@ -99,14 +96,8 @@ class CommitToOpinionTrainer(gym.Env):
         if self.num_steps == self.max_num_steps:
             self.done = True
 
-            correct_commitment_count = 0
-
-            for agent in self.swarm_agents:
-                if agent.calculate_opinion() == self.correct_opinion:
-                    correct_commitment_count += 1
-
             correct_commitment_ratio = (
-                correct_commitment_count / self.num_of_swarm_agents
+                np.sum(self.correct_commitments) / self.num_of_swarm_agents
             )
 
             wandb.log(
@@ -118,8 +109,8 @@ class CommitToOpinionTrainer(gym.Env):
                 }
             )
 
-            self.environment_type_weighting[self.index_of_environment] = round(
-                100 - (correct_commitment_ratio * 100)
+            self.environment_type_weighting[self.index_of_environment] = 100 - (
+                correct_commitment_ratio * 100
             )
 
         if self.random_agent_per_step:
@@ -160,11 +151,13 @@ class CommitToOpinionTrainer(gym.Env):
                 ),
                 needs_models_loaded=True,
                 current_direction_facing=random.randint(0, 3),
+                total_number_of_environment_cells=self.width * self.height,
             )
             for _ in range(self.num_of_swarm_agents)
         ]
 
         self.agent_to_train = random.choice(self.swarm_agents)
         self.time_to_first_commit = np.zeros(self.num_of_swarm_agents)
+        self.correct_commitments = np.zeros(self.num_of_swarm_agents)
 
         return self.agent_to_train.return_commit_decision_states()

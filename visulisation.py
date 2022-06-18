@@ -14,7 +14,7 @@ from environment_agent_modules import (
 import random
 from helper_files import return_list_of_coordinates_column_by_columns
 
-TILE_SIZE = 25
+TILE_SIZE = 10
 MID_POINT_OFFSET = round(TILE_SIZE / 2)
 root = tk.Tk()
 SCREEN_MID_POINT = (
@@ -109,27 +109,26 @@ def move_and_show_window(x: int, y: int, winname: str, img: np.ndarray) -> None:
     cv2.namedWindow(winname)
     cv2.moveWindow(winname, x, y)
     cv2.imshow(winname, img)
-    cv2.waitKey(0)
+    cv2.waitKey(300)
 
 
 def main() -> None:
-    tile_grid = create_clustered_inital_observation_useful_tile_grid(
-        38, 38, ratio_of_white_to_black_tiles=0.72
+    tile_grid = create_clustered_inital_observation_not_useful_tile_grid(
+        150, 150, ratio_of_white_to_black_tiles=0.75
     )
 
-    print(f"correct opinion: {round(return_ratio_of_white_to_black_tiles(tile_grid))}")
-
     list_of_locations = return_list_of_coordinates_column_by_columns(
-        num_of_columns=25, num_of_rows=25
+        num_of_columns=150, num_of_rows=150
     )
 
     swarm_agents = [
         SwarmAgent(
             starting_cell=(tile_grid[list_of_locations.pop(0)]),
-            current_direction_facing=2,
+            current_direction_facing=1,
             needs_models_loaded=True,
+            total_number_of_environment_cells=150 * 150,
         )
-        for _ in range(25)
+        for _ in range(100)
     ]
 
     display_location = (
@@ -137,12 +136,20 @@ def main() -> None:
         round(SCREEN_MID_POINT[1] - (tile_grid.shape[0] * TILE_SIZE / 1.5)),
     )
 
-    for i in range(200):
+    for i in range(400):
         img = setup_tile_grid_for_display(tile_grid)
 
         for agent in swarm_agents:
             draw_swarm_agent_on_tile_grid(img, agent)
-            agent.navigate(tile_grid)
+            # agent.navigate(tile_grid)
+            if agent.return_ratio_of_total_environment_cells_observed() > (1 / 150):
+                if not agent.committed_to_opinion:
+                    agent.committed_to_opinion = random.choices(
+                        [0, 1], weights=[0.95, 0.05]
+                    )[0]
+                agent.perform_decision_navigate_opinion_update_cycle(tile_grid)
+            else:
+                agent.navigate(tile_grid)
 
         move_and_show_window(*display_location, winname="Tile Grid", img=img)
 
