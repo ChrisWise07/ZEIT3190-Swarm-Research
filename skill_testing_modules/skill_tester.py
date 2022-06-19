@@ -22,7 +22,6 @@ def test_skill_with_environment(args: argparse.Namespace) -> None:
         project="swarm_research_evaluation_data",
         config=config,
     )
-
     env = config["testing_environment"](**config)
 
     for _ in range(config["num_episodes"]):

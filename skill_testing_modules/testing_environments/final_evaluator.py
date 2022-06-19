@@ -10,6 +10,7 @@ SECONDS_IN_MINUTE = 60
 
 from environment_agent_modules import (
     SwarmAgent,
+    MaliciousAgent,
     return_ratio_of_white_to_black_tiles,
 )
 
@@ -19,7 +20,7 @@ from helper_files.utils import (
 )
 
 
-class CommitToOpinionEvaluator:
+class FinalEvaluator:
     def __init__(
         self,
         width: int,
@@ -28,8 +29,11 @@ class CommitToOpinionEvaluator:
         max_num_of_steps: int,
         environment_type_name: str,
         ratio_of_white_to_black_tiles: float,
-        eval_model_name: str,
-        commitment_threshold: float,
+        opinion_weighting_method: str,
+        num_of_malicious_agents: int,
+        sensing_noise: float,
+        communication_noise: float,
+        max_new_opinion_weighting: float,
         **kwargs,
     ):
         self.width, self.height = width, height
@@ -37,23 +41,27 @@ class CommitToOpinionEvaluator:
         self.max_num_of_steps = max_num_of_steps
         self.environment_type = environment_type_map[environment_type_name]
         self.ratio_of_white_to_black_tiles = ratio_of_white_to_black_tiles
-        self.eval_model_name = None
-        self.commitment_threshold = commitment_threshold
+        self.opinion_weighting_method = opinion_weighting_method
+        self.num_of_malicious_agents = num_of_malicious_agents
+        self.sensing_noise = sensing_noise
+        self.communication_noise = communication_noise
+        self.max_new_opinion_weighting = max_new_opinion_weighting
 
     def set_time_to_first_commit(self, pos: int, time: int):
         self.time_to_first_commit[pos] = time
 
     def make_commitment_decision(self, agent: SwarmAgent):
-        if self.eval_model_name is not None:
-            agent.decide_if_to_commit()
-        else:
-            if (
-                agent.calculated_collective_opinion < self.commitment_threshold
-                or (1 - agent.calculated_collective_opinion) < self.commitment_threshold
-            ):
-                agent.committed_to_opinion = True
+        if (
+            agent.calculated_collective_opinion < 0.05
+            or (1 - agent.calculated_collective_opinion) < 0.05
+        ):
+            agent.committed_to_opinion = True
 
     def step(self):
+        for agent in self.malicious_agents:
+            print(f"malicious agent broadcasting opinion {agent.malicious_opinion}")
+            agent.navigate(self.tile_grid)
+
         for pos, agent in enumerate(self.swarm_agents):
             if agent.return_ratio_of_total_environment_cells_observed() > (
                 1 / self.height
@@ -112,13 +120,13 @@ class CommitToOpinionEvaluator:
             return_ratio_of_white_to_black_tiles(self.tile_grid)
         )
 
-        self.num_steps = 0
-
         list_of_coordinates_to_distribute_agents_over = (
             return_list_of_coordinates_column_by_columns(
                 num_of_columns=self.width, num_of_rows=self.height
             )
         )
+
+        self.num_steps = 0
 
         self.swarm_agents = [
             SwarmAgent(
@@ -131,9 +139,26 @@ class CommitToOpinionEvaluator:
                 },
                 current_direction_facing=1,
                 total_number_of_environment_cells=self.width * self.height,
+                sensing_noise=self.sensing_noise,
+                communication_noise=self.communication_noise,
+                max_new_opinion_weighting=self.max_new_opinion_weighting,
+                opinion_weighting_method=self.opinion_weighting_method,
             )
             for _ in range(self.num_of_swarm_agents)
         ]
 
+        self.malicious_agents = [
+            MaliciousAgent(
+                starting_cell=(
+                    self.tile_grid[list_of_coordinates_to_distribute_agents_over.pop(0)]
+                ),
+                malicious_opinion=((self.correct_opinion + 1) % 2),
+                current_direction_facing=1,
+            )
+            for _ in range(self.num_of_malicious_agents)
+        ]
+
+        print(f"there are {len(self.swarm_agents)} swarm agents")
+        print(f"there are {len(self.malicious_agents)} malicious agents")
         self.agents_committed = 0
         self.time_to_first_commit = np.zeros(self.num_of_swarm_agents)

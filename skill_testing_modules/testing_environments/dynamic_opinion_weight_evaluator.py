@@ -59,20 +59,24 @@ class DynamicOpinionWeightEvaluator:
             agent.navigate(self.tile_grid)
 
         for agent in self.swarm_agents:
-            self.update_opinion_weight(agent)
+            # self.update_opinion_weight(agent)
             agent.decide_to_sense_or_broadcast()
             agent.navigate_and_recieve_opinions(self.tile_grid)
 
         correct_opinion_weight = np.array(
             [
-                (agent.opinion_weights[self.correct_opinion])
+                (agent.return_opinion_weight_based_on_equation(self.correct_opinion))
                 for agent in self.swarm_agents
             ]
         )
 
         incorrect_opinion_weights = np.array(
             [
-                (agent.opinion_weights[(self.correct_opinion + 1) % 2])
+                (
+                    agent.return_opinion_weight_based_on_equation(
+                        (self.correct_opinion + 1) % 2
+                    )
+                )
                 for agent in self.swarm_agents
             ]
         )

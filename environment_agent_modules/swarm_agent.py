@@ -25,6 +25,7 @@ class SwarmAgent:
     sensing_noise: float = 0.0
     communication_noise: float = 0.0
     total_number_of_environment_cells: int = 625
+    opinion_weighting_method: str = "list_of_weights"
 
     communication_range: int = 1
     sensing: int = 1
@@ -50,7 +51,7 @@ class SwarmAgent:
         ]
 
         if needs_models_loaded:
-            from stable_baselines3 import DQN, PPO
+            from stable_baselines3 import DQN
 
             sense_model = model_names.get("sense_model")
             if sense_model is not None:
@@ -58,17 +59,17 @@ class SwarmAgent:
                     f"{TRAINED_MODELS_DIRECTORY}/{model_names.get('sense_model')}"
                 )
 
-            commit_to_opinion_model = model_names.get("commit_to_opinion_model")
-            if commit_to_opinion_model is not None:
-                self.commit_to_opinion_model = DQN.load(
-                    f"{TRAINED_MODELS_DIRECTORY}/{model_names.get('commit_to_opinion_model')}"
-                )
+            # commit_to_opinion_model = model_names.get("commit_to_opinion_model")
+            # if commit_to_opinion_model is not None:
+            #     self.commit_to_opinion_model = DQN.load(
+            #         f"{TRAINED_MODELS_DIRECTORY}/{model_names.get('commit_to_opinion_model')}"
+            #     )
 
-            dynamic_opinion_model = model_names.get("dynamic_opinion_model")
-            if dynamic_opinion_model is not None:
-                self.dynamic_opinion_model = PPO.load(
-                    f"{TRAINED_MODELS_DIRECTORY}/{model_names.get('dynamic_opinion_model')}"
-                )
+            # dynamic_opinion_model = model_names.get("dynamic_opinion_model")
+            # if dynamic_opinion_model is not None:
+            #     self.dynamic_opinion_model = PPO.load(
+            #         f"{TRAINED_MODELS_DIRECTORY}/{model_names.get('dynamic_opinion_model')}"
+            #     )
 
         if not (self.occupy_cell(starting_cell)):
             self.current_cell = (None, None)
@@ -164,8 +165,6 @@ class SwarmAgent:
         return round(self.num_of_white_cells_observed / self.num_of_cells_observed)
 
     def return_opinion(self) -> Union[int, None]:
-        # if not (self.sensing):
-        #     return self.calculate_opinion()
         if not (self.sensing):
             if not (self.committed_to_opinion):
                 return self.calculate_opinion()
@@ -184,7 +183,14 @@ class SwarmAgent:
             k=1,
         )[0]
 
-        opinion_weight = self.opinion_weights[opinion]
+        if self.opinion_weighting_method == "list_of_weights":
+            opinion_weight = self.opinion_weights[opinion]
+        elif self.opinion_weighting_method == "equation_based":
+            opinion_weight = self.return_opinion_weight_based_on_equation(opinion)
+        elif self.opinion_weighting_method == "inverted_equation_based":
+            opinion_weight = self.return_opinion_weight_based_on_equation(
+                (opinion + 1) % 2
+            )
 
         self.calculated_collective_opinion = (
             (1 - opinion_weight) * self.calculated_collective_opinion
