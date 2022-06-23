@@ -10,142 +10,69 @@ plt.rc("ytick", labelsize=8)
 plt.rc("axes", labelsize=8)
 
 # width as measured in inkscape
-width = 3.487 * 2
+width = 3.487
 height = width / 1.618
 
-
+title_font_size = 8
 alpha_value = 0.625
 fig, ax = plt.subplots(figsize=(width, height))
 plt.suptitle(
-    "Percentage of Correctly Commitment Agents for Different Algorithms",
-    fontsize=10,
+    "Percentage of Opinions Shared For Different Algorithms",
+    fontsize=title_font_size,
 )
 
 ax.set_ylim([0.0, 1.0])
 
 x = np.arange(3)
-accuracy_no_mal_01 = [0.9974, 0.9976, 1.0000]
-accuracy_no_mal_01_error = [0.0031, 0.0047, 0.0000]
-
-accuracy_mal_01 = [0.9788, 0.9815, 0.9893]
-accuracy_mal_01_error = [0.0047, 0.0084, 0.0039]
-
-accuracy_no_mal_04 = [0.9944, 0.9969, 0.9993]
-accuracy_no_mal_04_error = [0.0042, 0.0032, 0.0015]
-
-accuracy_mal_04 = [0.9796, 0.9784, 0.9784]
-accuracy_mal_04_error = [0.0071, 0.0068, 0.0038]
-
-accuracy_no_mal_10 = [0.9870, 0.9924, 0.9956]
-accuracy_no_mal_10_error = [0.0045, 0.0040, 0.0037]
-
-accuracy_mal_10 = [0.9638, 0.9786, 0.9547]
-accuracy_mal_10_error = [0.0093, 0.0069, 0.0127]
-
+incorrect_shared = [0.21, 0.20, 0.17]
+incorrect_shared_error = [0.20, 0.08, 0.12]
+correct_shared = [0.5, 0.79, 0.83]
+correct_shared_error = [0.12, 0.15, 0.10]
 
 ax.bar(
-    x - 0.35,
-    accuracy_no_mal_01,
-    yerr=accuracy_no_mal_01_error,
+    x - 0.2,
+    incorrect_shared,
+    yerr=incorrect_shared_error,
     align="center",
     alpha=alpha_value,
     ecolor="black",
-    capsize=4,
-    color=["b"],
-    width=0.1,
-)
-ax.bar(
-    x - 0.25,
-    accuracy_mal_01,
-    yerr=accuracy_mal_01_error,
-    align="center",
-    alpha=alpha_value,
-    ecolor="black",
-    capsize=4,
-    color=["g"],
-    width=0.1,
-)
-ax.bar(
-    x - 0.05,
-    accuracy_no_mal_04,
-    yerr=accuracy_no_mal_04_error,
-    align="center",
-    alpha=alpha_value,
-    ecolor="black",
-    capsize=4,
+    capsize=5,
     color=["r"],
-    width=0.1,
+    width=0.4,
 )
 ax.bar(
-    x + 0.05,
-    accuracy_mal_04,
-    yerr=accuracy_mal_04_error,
+    x + 0.2,
+    correct_shared,
+    yerr=correct_shared_error,
     align="center",
     alpha=alpha_value,
     ecolor="black",
-    capsize=4,
-    color=["c"],
-    width=0.1,
+    capsize=5,
+    color=["g"],
+    width=0.4,
 )
-ax.bar(
-    x + 0.25,
-    accuracy_no_mal_10,
-    yerr=accuracy_no_mal_10_error,
-    align="center",
-    alpha=alpha_value,
-    ecolor="black",
-    capsize=4,
-    color=["m"],
-    width=0.1,
-)
-ax.bar(
-    x + 0.35,
-    accuracy_mal_10,
-    yerr=accuracy_mal_10_error,
-    align="center",
-    alpha=alpha_value,
-    ecolor="black",
-    capsize=4,
-    color=["y"],
-    width=0.1,
-)
-
 plt.xticks(
     x,
     [
-        "Static",
-        "Skill 4.0",
-        "Equation-based",
-        "Inverted-equation-based",
+        "Random",
+        "Parameterised-Probability",
+        "Skill 2.0",
     ],
-    fontsize=8,
+    fontsize=title_font_size - 1,
 )
 plt.yticks(
-    fontsize=8,
+    fontsize=title_font_size - 1,
 )
 
-
-plt.ylabel("Percentage of correct commitments", fontsize=8)
+plt.ylabel("Percentage of Opinions Shared", fontsize=title_font_size - 1)
 
 box = ax.get_position()
-ax.set_position(
-    [
-        box.x0 - box.width * 0.05,
-        box.y0 + box.height * 0.075,
-        box.width * 1.15,
-        box.height * 0.975,
-    ]
-)
+ax.set_position([box.x0, box.y0 + box.height * 0.15, box.width, box.height * 0.85])
 
 colors = {
-    "Non Malicious max opinion weight: 0.1": "b",
-    "Malicious max opinion weight: 0.1": "g",
-    "Non Malicious max opinion weight: 0.4": "r",
-    "Malicious max opinion weight: 0.4": "c",
-    "Non Malicious max opinion weight: 1.0": "m",
-    "Malicious max opinion weight: 1.0": "y",
+    "Incorrect Opinions": "r",
+    "Correct Opinions": "g",
 }
-
 labels = list(colors.keys())
 handles = [
     plt.Rectangle((0, 0), 1, 1, color=colors[label], alpha=alpha_value)
@@ -155,9 +82,9 @@ plt.legend(
     handles,
     labels,
     loc="upper center",
-    bbox_to_anchor=(0.475, -0.075),
-    ncol=3,
-    fontsize=8,
+    bbox_to_anchor=(0.5, -0.15),
+    ncol=2,
+    fontsize=7,
     handletextpad=0.1,
 )
 

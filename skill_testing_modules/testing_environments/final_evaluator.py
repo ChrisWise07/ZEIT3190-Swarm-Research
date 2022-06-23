@@ -59,7 +59,6 @@ class FinalEvaluator:
 
     def step(self):
         for agent in self.malicious_agents:
-            print(f"malicious agent broadcasting opinion {agent.malicious_opinion}")
             agent.navigate(self.tile_grid)
 
         for pos, agent in enumerate(self.swarm_agents):
@@ -158,7 +157,5 @@ class FinalEvaluator:
             for _ in range(self.num_of_malicious_agents)
         ]
 
-        print(f"there are {len(self.swarm_agents)} swarm agents")
-        print(f"there are {len(self.malicious_agents)} malicious agents")
         self.agents_committed = 0
         self.time_to_first_commit = np.zeros(self.num_of_swarm_agents)

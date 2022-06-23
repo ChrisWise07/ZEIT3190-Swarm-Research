@@ -47,28 +47,40 @@ class CommitToOpinionEvaluator:
         if self.eval_model_name is not None:
             agent.decide_if_to_commit()
         else:
-            if (
-                agent.calculated_collective_opinion < self.commitment_threshold
-                or (1 - agent.calculated_collective_opinion) < self.commitment_threshold
-            ):
-                agent.committed_to_opinion = True
+            # if (
+            #     agent.calculated_collective_opinion < self.commitment_threshold
+            #     or (1 - agent.calculated_collective_opinion) < self.commitment_threshold
+            # ):
+            #     agent.committed_to_opinion = True
+            agent.committed_to_opinion = random.choices([0, 1], weights=[95, 5]).pop(0)
 
     def step(self):
-        for pos, agent in enumerate(self.swarm_agents):
-            if agent.return_ratio_of_total_environment_cells_observed() > (
-                1 / self.height
-            ):
-                if not agent.committed_to_opinion:
-                    self.make_commitment_decision(agent)
-                    if agent.committed_to_opinion:
-                        self.agents_committed += 1
-                        self.set_time_to_first_commit(pos, self.num_steps)
+        # for pos, agent in enumerate(self.swarm_agents):
+        #     if agent.return_ratio_of_total_environment_cells_observed() > (
+        #         1 / self.height
+        #     ):
+        #         if not agent.committed_to_opinion:
+        #             self.make_commitment_decision(agent)
+        #             if agent.committed_to_opinion:
+        #                 self.agents_committed += 1
+        #                 self.set_time_to_first_commit(pos, self.num_steps)
 
-                agent.perform_decision_navigate_opinion_update_cycle(
-                    tile_grid=self.tile_grid
-                )
-            else:
-                agent.navigate(self.tile_grid)
+        #         agent.perform_decision_navigate_opinion_update_cycle(
+        #             tile_grid=self.tile_grid
+        #         )
+        #     else:
+        #         agent.navigate(self.tile_grid)
+
+        for pos, agent in enumerate(self.swarm_agents):
+            if not agent.committed_to_opinion:
+                self.make_commitment_decision(agent)
+                if agent.committed_to_opinion:
+                    self.agents_committed += 1
+                    self.set_time_to_first_commit(pos, self.num_steps)
+
+            agent.perform_decision_navigate_opinion_update_cycle(
+                tile_grid=self.tile_grid
+            )
 
         self.num_steps += 1
 
@@ -128,6 +140,7 @@ class CommitToOpinionEvaluator:
                 needs_models_loaded=True,
                 model_names={
                     "sense_model": "sense_broadcast_model",
+                    "commit_to_opinion_model": self.eval_model_name,
                 },
                 current_direction_facing=1,
                 total_number_of_environment_cells=self.width * self.height,

@@ -1,6 +1,6 @@
 #!/bin/bash
-export EVAL_MODEL_NAME="test_eval"
-export TESTING_EVIRONMENT="final_evaluator"
+export EVAL_MODEL_NAME="random"
+export TESTING_EVIRONMENT="commit_to_opinion_evaluator"
 export MAX_NEW_OPINION_WEIGHTING=0.1 #0.1, 0.2, 0.4
 export OPINION_WEIGHTING_METHOD="list_of_weights" #equation_based, list_of_weights
 export NUM_OF_MALICIOUS_AGENTS=0 #0, 1

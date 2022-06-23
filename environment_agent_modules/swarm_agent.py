@@ -59,11 +59,11 @@ class SwarmAgent:
                     f"{TRAINED_MODELS_DIRECTORY}/{model_names.get('sense_model')}"
                 )
 
-            # commit_to_opinion_model = model_names.get("commit_to_opinion_model")
-            # if commit_to_opinion_model is not None:
-            #     self.commit_to_opinion_model = DQN.load(
-            #         f"{TRAINED_MODELS_DIRECTORY}/{model_names.get('commit_to_opinion_model')}"
-            #     )
+            commit_to_opinion_model = model_names.get("commit_to_opinion_model")
+            if commit_to_opinion_model is not None:
+                self.commit_to_opinion_model = DQN.load(
+                    f"{TRAINED_MODELS_DIRECTORY}/{model_names.get('commit_to_opinion_model')}"
+                )
 
             # dynamic_opinion_model = model_names.get("dynamic_opinion_model")
             # if dynamic_opinion_model is not None:
